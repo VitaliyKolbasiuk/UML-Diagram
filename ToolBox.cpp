@@ -11,7 +11,7 @@ ToolBox::ToolBox()
     setMinimumSize(ELEMENT_WIDTH, (ELEMENT_HEIGHT + PADDING) * ToolBoxModel::gModel.m_elements.size() + PADDING);
 }
 
-void ToolBox::paintEvent(QPaintEvent *event)
+void ToolBox::paintEvent(QPaintEvent* event)
 {
     Q_UNUSED(event);
 
@@ -22,9 +22,10 @@ void ToolBox::paintEvent(QPaintEvent *event)
     painter.setPen(pen);
 
     int yOffset = PADDING;
-    for (const auto &element: ToolBoxModel::gModel.m_elements)
+    gCurrentPainter = &painter;
+    for (const auto& element: ToolBoxModel::gModel.m_elements)
     {
-        drawElement(element, &painter, ELEMENT_WIDTH, ELEMENT_HEIGHT, 0, yOffset);
+        element->draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, 0, yOffset);
         yOffset += ELEMENT_HEIGHT + PADDING;
         resize(ELEMENT_WIDTH, yOffset);
     }

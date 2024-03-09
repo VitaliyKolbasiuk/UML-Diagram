@@ -17,6 +17,7 @@ namespace ToolBoxModel
         };
 
         virtual Type type() const = 0;
+        virtual void draw(int width, int height, int xOffset, int yOffset) = 0;
     };
 
     struct Block : Element
@@ -25,6 +26,8 @@ namespace ToolBoxModel
         {
             return Element::Block;
         }
+
+        void draw(int width, int height, int xOffset, int yOffset) override;
     };
 
     struct Select : Element
@@ -33,6 +36,8 @@ namespace ToolBoxModel
         {
             return Element::Select;
         }
+
+        void draw(int width, int height, int xOffset, int yOffset) override;
     };
 
     struct If : Element
@@ -41,8 +46,29 @@ namespace ToolBoxModel
         {
             return Element::If;
         }
+
+        void draw(int width, int height, int xOffset, int yOffset) override;
     };
 
+    struct For : Element
+    {
+        Element::Type type() const override
+        {
+            return Element::For;
+        }
+
+        void draw(int width, int height, int xOffset, int yOffset) override;
+    };
+
+    struct Connect : Element
+    {
+        Element::Type type() const override
+        {
+            return Element::Connect;
+        }
+
+        void draw(int width, int height, int xOffset, int yOffset) override;
+    };
 
     struct Model
     {
@@ -50,8 +76,8 @@ namespace ToolBoxModel
 
         Model()
         {
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
+            m_elements.push_back(std::make_shared<If>());
+            m_elements.push_back(std::make_shared<For>());
             m_elements.push_back(std::make_shared<Block>());
             m_elements.push_back(std::make_shared<Block>());
             m_elements.push_back(std::make_shared<Block>());
