@@ -1,5 +1,4 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
 
@@ -9,10 +8,13 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+class DragObject;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-    Ui::MainWindow *ui;
+    Ui::MainWindow* ui;
+    DragObject*     m_dragObejct;
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -21,4 +23,3 @@ public:
 private:
     void initToolBox();
 };
-#endif // MAINWINDOW_H

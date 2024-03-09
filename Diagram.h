@@ -2,7 +2,9 @@
 
 #include <QWidget>
 #include <QSplitter>
-#include "QPainter"
+#include <QPainter>
+#include <QMouseEvent>
+
 
 inline int getDiagramWidth()
 {
@@ -29,9 +31,13 @@ class Diagram : public QWidget
 
 
 public:
+    Diagram();
     Diagram(QSplitter* parent) : QWidget(parent) {}
 
     void paintEvent(QPaintEvent* event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
 
 private:
 

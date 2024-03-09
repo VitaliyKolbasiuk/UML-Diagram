@@ -26,6 +26,8 @@ set(PROJECT_SOURCES
         ToolBoxModel.cpp
         ToolBoxModel.h
         DrawElements.h
+        DragObject.cpp
+        DragObject.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR})
