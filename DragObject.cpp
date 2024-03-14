@@ -24,7 +24,7 @@ void DragObject::paintEvent(QPaintEvent *event)
         QPainter painter(this);
         QPen     pen;
         pen.setColor(Qt::yellow);
-        pen.setWidth(3);
+        pen.setStyle(Qt::DashLine);
         painter.setPen(pen);
 
         float xScale = 0.5, yScale = 0.5;

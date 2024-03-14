@@ -26,17 +26,19 @@ inline int getGridHeight()
     return 50;
 }
 
-struct GridElement
+struct DiagramElement
 {
     ToolBoxModel::Element::Type type;
-    int xOffset;
-    int yOffset;
+    int column;
+    int row;
 };
 
 class Diagram : public QWidget
 {
-    std::vector<GridElement> m_gridElements;
-    GridElement* m_currGridElement = nullptr;
+    std::vector<DiagramElement> m_diagramElements;
+    DiagramElement* m_dragElement = nullptr;
+    DiagramElement* m_currentElement = nullptr;
+//    std::vector<>   m_arrow;
 
 public:
     Diagram();
@@ -46,9 +48,12 @@ public:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
 
-    void setCurrentElement(ToolBoxModel::Element::Type type, int xOffset, int yOffset);
-    void currentItemReleased(int xOffset, int yOffset);
+    void setCurrentElement(ToolBoxModel::Element::Type type);
+    void currentItemReleased();
+
 private:
-    void drawGridElement(QPainter* painter, const GridElement& element);
+    void drawGridElement(const DiagramElement& element);
     void drawGrid(QPainter* painter);
+    DiagramElement* isElementClicked(QPoint mousePos);
+    void drawCurrentElement();
 };

@@ -58,13 +58,10 @@ void ToolBox::mouseMoveEvent(QMouseEvent *event)
     //qDebug() << "ToolBox mouse move" << event->pos().x() << event->pos().y();
     if (m_dragObject->isVisible())
     {
-        m_dragObject->move(event->pos());
+        m_dragObject->move(event->pos() - QPoint(ELEMENT_WIDTH / 2, ELEMENT_HEIGHT / 2));
         if (event->pos().x() - width() > 0)
         {
-            QPoint mousePos = mapFromGlobal(QCursor::pos());
-            int i = (mousePos.x() - width()) / getGridWidth() * getGridWidth();
-            int j = mousePos.y()  / getGridHeight() * getGridHeight();
-            m_diagram->setCurrentElement(m_dragObject->objectType(), i, j);
+            m_diagram->setCurrentElement(m_dragObject->objectType());
         }
     }
 }
@@ -74,10 +71,7 @@ void ToolBox::mouseReleaseEvent(QMouseEvent *event)
     qDebug() << "ToolBox mouse release";
     m_dragObject->setVisible(false);
 
-    QPoint mousePos = mapFromGlobal(QCursor::pos());
-    int i = (mousePos.x() - width()) / getGridWidth() * getGridWidth();
-    int j = mousePos.y()  / getGridHeight() * getGridHeight();
-    m_diagram->currentItemReleased(i, j);
+    m_diagram->currentItemReleased();
 }
 
 void ToolBox::setDragObjectRef(DragObject &dragObject)
