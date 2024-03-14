@@ -1,8 +1,9 @@
 #pragma once
 
+#include "ToolBoxModel.h"
+
 #include <QPainter>
 #include <QPainterPath>
-#include "ToolBoxModel.h"
 
 inline QPainter* gCurrentPainter = nullptr;
 

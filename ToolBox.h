@@ -3,13 +3,15 @@
 #include <QWidget>
 #include <QPainter>
 #include <QPainterPath>
-#include <QMouseEvent>
 
 class DragObject;
+class Diagram;
 
 class ToolBox : public QWidget
 {
     DragObject* m_dragObject;
+    Diagram*    m_diagram;
+    
 public:
     ToolBox();
 
@@ -19,4 +21,5 @@ public:
     void mouseReleaseEvent(QMouseEvent* event) override;
 
     void setDragObjectRef(DragObject& dragObject);
+    void setDiagramRef(QWidget& diagram);
 };

@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     m_dragObejct = new DragObject(this);
     ui->m_toolBox->setDragObjectRef(*m_dragObejct);
+    ui->m_toolBox->setDiagramRef(*ui->m_scrollDiagram->widget());
     initToolBox();
 }
 
