@@ -1,8 +1,6 @@
 #pragma once
 
 #include <QWidget>
-#include <QPainter>
-#include <QPainterPath>
 
 class DragObject;
 class Diagram;

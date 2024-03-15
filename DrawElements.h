@@ -28,9 +28,8 @@ inline void drawElement<ToolBoxModel::If>(ToolBoxModel::If,
     path.lineTo(xOffset + width / 2, yOffset + height);
     path.lineTo(xOffset, yOffset + height / 2);
 
-    path.closeSubpath(); // Close the path
+    path.closeSubpath();
 
-    //gCurrentPainter->fillPath(path, gCurrentPainter->pen().color());
     gCurrentPainter->drawPath(path);
 }
 
@@ -48,11 +47,9 @@ inline void drawElement<ToolBoxModel::For>(ToolBoxModel::For,
     path.lineTo(xOffset + width, yOffset + height / 2);
     path.lineTo(xOffset + width / 1.33, yOffset + height);
     path.lineTo(xOffset + width / 4, yOffset + height);
-    path.lineTo(xOffset, yOffset + height / 2);
 
     path.closeSubpath();
 
-    //gCurrentPainter->fillPath(path, gCurrentPainter->pen().color());
     gCurrentPainter->drawPath(path);
 }
 

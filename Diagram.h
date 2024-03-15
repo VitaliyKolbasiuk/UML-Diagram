@@ -1,10 +1,8 @@
 #pragma once
 
-#include <QWidget>
-#include <QPainter>
-#include <QMouseEvent>
-
 #include "ToolBoxModel.h"
+
+#include <QWidget>
 
 inline int getDiagramWidth()
 {
@@ -55,5 +53,7 @@ private:
     void drawGridElement(const DiagramElement& element);
     void drawGrid(QPainter* painter);
     DiagramElement* isElementClicked(QPoint mousePos);
-    void drawCurrentElement();
+    void drawCurrentElement(QPainter* painter);
+    bool isWithinDiagramArea(QPoint point) const;
+    void deleteDragElement();
 };

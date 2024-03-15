@@ -4,7 +4,6 @@
 #include "DragObject.h"
 #include "Diagram.h"
 
-#include <QCursor>
 #include <QMouseEvent>
 
 #define ELEMENT_WIDTH  200

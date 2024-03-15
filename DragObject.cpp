@@ -37,23 +37,16 @@ void DragObject::paintEvent(QPaintEvent *event)
         switch(m_objectType)
         {
             case ToolBoxModel::Element::Block:
-            {
-                ToolBoxModel::Block elementBlock;
-                elementBlock.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
+                ToolBoxModel::Block{}.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
                 break;
-            }
+
             case ToolBoxModel::Element::If:
-            {
-                ToolBoxModel::If elementIf;
-                elementIf.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
+                ToolBoxModel::If{}.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
                 break;
-            }
+
             case ToolBoxModel::Element::For:
-            {
-                ToolBoxModel::For elementFor;
-                elementFor.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
+                ToolBoxModel::For{}.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
                 break;
-            }
         }
     }
 }

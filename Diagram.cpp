@@ -2,7 +2,9 @@
 #include "DrawElements.h"
 #include "ToolBoxModel.h"
 
-#include <QPainterPath>
+#include <QMouseEvent>
+
+#define CIRCLE_RADIUS getGridWidth() / 13
 
 Diagram::Diagram()
 {
@@ -26,8 +28,8 @@ void Diagram::paintEvent(QPaintEvent *event)
     gCurrentPainter = &painter;
     if (m_dragElement)
     {
-        drawGridElement(*m_dragElement);
         update();
+        drawGridElement(*m_dragElement);
     }
 
     for (const auto& element : m_diagramElements)
@@ -40,28 +42,20 @@ void Diagram::paintEvent(QPaintEvent *event)
 
     if (m_currentElement)
     {
-        drawCurrentElement();
-        update();
+        drawCurrentElement(&painter);
     }
 }
 
 void Diagram::drawGrid(QPainter* painter)
 {
-    QPainterPath path;
-
-    painter->drawPath(path);
     for (int x = 0; x <= getDiagramWidth(); x += getGridWidth())
     {
-        path.moveTo(x, 0);
-        path.lineTo(x, getDiagramHeight());
+        painter->drawLine(x, 0, x, getDiagramHeight());
     }
     for (int y = 0; y <= getDiagramHeight(); y += getGridHeight())
     {
-        path.moveTo(0, y);
-        path.lineTo(getDiagramWidth(), y);
+        painter->drawLine(0, y, getDiagramWidth(), y);
     }
-    painter->drawPath(path);
-
 }
 
 void Diagram::drawGridElement(const DiagramElement& element)
@@ -69,65 +63,54 @@ void Diagram::drawGridElement(const DiagramElement& element)
     switch (element.type)
     {
         case ToolBoxModel::Element::Block:
-        {
-            ToolBoxModel::Block elementBlock;
-            elementBlock.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            ToolBoxModel::Block{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
             break;
-        }
+
         case ToolBoxModel::Element::If:
-        {
-            ToolBoxModel::If elementIf;
-            elementIf.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            ToolBoxModel::If{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
             break;
-        }
+
         case ToolBoxModel::Element::For:
-        {
-            ToolBoxModel::For elementFor;
-            elementFor.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            ToolBoxModel::For{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
             break;
-        }
     }
 }
 
-void Diagram::drawCurrentElement()
+void Diagram::drawCurrentElement(QPainter* painter)
 {
-    QPainter painter(this);
     QBrush brush(Qt::darkGray);
-    painter.setBrush(brush);
-    gCurrentPainter = &painter;
-
+    painter->setBrush(brush);
+    QPen pen(Qt::white);
+    painter->setPen(pen);
     drawGridElement(*m_currentElement);
+
+    int halfRadius = CIRCLE_RADIUS / 2;
+
+    int leftPointX  = m_currentElement->column * getGridWidth() - halfRadius;
+    int midPointX  = m_currentElement->column * getGridWidth() + getGridWidth() / 2 - halfRadius;
+    int rightPointX = m_currentElement->column * getGridWidth() + getGridWidth() - halfRadius;
+
+    int midPointY  = m_currentElement->row * getGridHeight() + getGridHeight() / 2 - halfRadius;
+    int downPointY = m_currentElement->row * getGridHeight() + getGridHeight() - halfRadius;
 
     switch (m_currentElement->type)
     {
         case ToolBoxModel::Element::Block:
-            painter.drawEllipse(m_currentElement->column * getGridWidth() + getGridWidth() / 2,
-                                m_currentElement->row * getGridHeight() + getGridHeight() - getGridHeight() / 16,
-                                getGridHeight() / 8, getGridHeight() / 8);
+            painter->drawEllipse(midPointX, downPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
             break;
 
         case ToolBoxModel::Element::If:
-            painter.drawEllipse(m_currentElement->column * getGridWidth(),
-                                m_currentElement->row * getGridHeight() + getGridHeight() / 2 - getGridHeight() / 16,
-                                getGridHeight() / 8, getGridHeight() / 8);
+            painter->drawEllipse(leftPointX,midPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
 
-            painter.drawEllipse(m_currentElement->column * getGridWidth() + getGridWidth() / 2 - getGridHeight() / 16,
-                                m_currentElement->row * getGridHeight() + getGridHeight() - getGridHeight() / 16,
-                                getGridHeight() / 8, getGridHeight() / 8);
+            painter->drawEllipse(midPointX,downPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
 
-            painter.drawEllipse(m_currentElement->column * getGridWidth() + getGridWidth() - getGridHeight() / 16,
-                                m_currentElement->row * getGridHeight() + getGridHeight() / 2 - getGridHeight() / 16,
-                                getGridHeight() / 8, getGridHeight() / 8);
+            painter->drawEllipse(rightPointX, midPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
             break;
 
         case ToolBoxModel::Element::For:
-            painter.drawEllipse(m_currentElement->column * getGridWidth() + getGridWidth() / 2,
-                                m_currentElement->row * getGridHeight() + getGridHeight() - getGridHeight() / 16,
-                                getGridHeight() / 8, getGridHeight() / 8);
+            painter->drawEllipse(midPointX,downPointY,CIRCLE_RADIUS, CIRCLE_RADIUS);
 
-            painter.drawEllipse(m_currentElement->column * getGridWidth() + getGridWidth() - getGridHeight() / 16,
-                                m_currentElement->row * getGridHeight() + getGridHeight() / 2 - getGridHeight() / 16,
-                                getGridHeight() / 8, getGridHeight() / 8);
+            painter->drawEllipse(rightPointX,midPointY,CIRCLE_RADIUS, CIRCLE_RADIUS);
             break;
     }
 }
@@ -168,7 +151,7 @@ void Diagram::mouseReleaseEvent(QMouseEvent* event)
 void Diagram::setCurrentElement(ToolBoxModel::Element::Type type)
 {
     QPoint mousePos = mapFromGlobal(QCursor::pos());
-    if (mousePos.x() >= getDiagramWidth() || mousePos.y() >= getDiagramHeight())
+    if (! isWithinDiagramArea(mousePos))
     {
         return;
     }
@@ -183,32 +166,43 @@ void Diagram::setCurrentElement(ToolBoxModel::Element::Type type)
     {
         m_dragElement->column = i;
         m_dragElement->row = j;
-        qDebug() << i << j;
     }
 }
 
 void Diagram::currentItemReleased()
 {
     QPoint mousePos = mapFromGlobal(QCursor::pos());
-    if (mousePos.x() >= 0 && mousePos.x() <= getDiagramWidth() && mousePos.y() >= 0 && mousePos.y() <= getDiagramHeight())
+    if (!isWithinDiagramArea(mousePos))
     {
-        int i = mousePos.x() / getGridWidth();
-        int j = mousePos.y()  / getGridHeight();
-
-        for(const auto& element : m_diagramElements)
-        {
-            if (element.column == i && element.row == j)
-            {
-                delete m_dragElement;
-                m_dragElement = nullptr;
-                return;
-            }
-        }
-
-        m_dragElement->column = i;
-        m_dragElement->row = j;
-        m_diagramElements.emplace_back(*m_dragElement);
+        deleteDragElement();
+        return;
     }
+
+    int i = mousePos.x() / getGridWidth();
+    int j = mousePos.y()  / getGridHeight();
+    for(const auto& element : m_diagramElements)
+    {
+        if (element.column == i && element.row == j)
+        {
+            deleteDragElement();
+            return;
+        }
+    }
+
+    m_dragElement->column = i;
+    m_dragElement->row = j;
+    m_diagramElements.emplace_back(*m_dragElement);
+    deleteDragElement();
+}
+
+bool Diagram::isWithinDiagramArea(QPoint point) const
+{
+    return point.x() >= 0 && point.x() < getDiagramWidth() &&
+           point.y() >= 0 && point.y() < getDiagramHeight();
+}
+
+void Diagram::deleteDragElement()
+{
     delete m_dragElement;
     m_dragElement = nullptr;
 }
