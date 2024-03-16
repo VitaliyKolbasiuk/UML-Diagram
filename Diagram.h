@@ -52,8 +52,11 @@ public:
 private:
     void drawGridElement(const DiagramElement& element);
     void drawGrid(QPainter* painter);
-    DiagramElement* isElementClicked(QPoint mousePos);
+    DiagramElement* onElementClicked(QPoint mousePos);
     void drawCurrentElement(QPainter* painter);
-    bool isWithinDiagramArea(QPoint point) const;
+    bool isWithinDiagramArea(const QPoint point) const;
     void deleteDragElement();
+    std::vector<QPoint> createCircles();
+    void drawCurrElementCircles(QPainter* painter, const std::vector<QPoint>& points);
+    bool onCircleCollision(const QPoint mousePos);
 };

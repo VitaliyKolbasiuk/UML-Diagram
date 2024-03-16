@@ -4,7 +4,7 @@
 
 #include <QMouseEvent>
 
-#define CIRCLE_RADIUS getGridWidth() / 13
+#define CIRCLE_RADIUS getGridWidth() / 15
 
 Diagram::Diagram()
 {
@@ -82,47 +82,28 @@ void Diagram::drawCurrentElement(QPainter* painter)
     painter->setBrush(brush);
     QPen pen(Qt::white);
     painter->setPen(pen);
+
     drawGridElement(*m_currentElement);
 
-    int halfRadius = CIRCLE_RADIUS / 2;
-
-    int leftPointX  = m_currentElement->column * getGridWidth() - halfRadius;
-    int midPointX  = m_currentElement->column * getGridWidth() + getGridWidth() / 2 - halfRadius;
-    int rightPointX = m_currentElement->column * getGridWidth() + getGridWidth() - halfRadius;
-
-    int midPointY  = m_currentElement->row * getGridHeight() + getGridHeight() / 2 - halfRadius;
-    int downPointY = m_currentElement->row * getGridHeight() + getGridHeight() - halfRadius;
-
-    switch (m_currentElement->type)
-    {
-        case ToolBoxModel::Element::Block:
-            painter->drawEllipse(midPointX, downPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
-            break;
-
-        case ToolBoxModel::Element::If:
-            painter->drawEllipse(leftPointX,midPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
-
-            painter->drawEllipse(midPointX,downPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
-
-            painter->drawEllipse(rightPointX, midPointY, CIRCLE_RADIUS, CIRCLE_RADIUS);
-            break;
-
-        case ToolBoxModel::Element::For:
-            painter->drawEllipse(midPointX,downPointY,CIRCLE_RADIUS, CIRCLE_RADIUS);
-
-            painter->drawEllipse(rightPointX,midPointY,CIRCLE_RADIUS, CIRCLE_RADIUS);
-            break;
-    }
+    drawCurrElementCircles(painter, createCircles());
 }
 
 void Diagram::mousePressEvent(QMouseEvent* event)
 {
     qDebug() << "Diagram mouse pressed";
 
-    m_currentElement = isElementClicked(event->pos());
+    if (m_currentElement && onCircleCollision(event->pos()))
+    {
+        // TODO : START TO DRAW ARROWS
+    }
+    else
+    {
+        m_currentElement = onElementClicked(event->pos());
+        update();
+    }
 }
 
-DiagramElement* Diagram::isElementClicked(QPoint mousePos)
+DiagramElement* Diagram::onElementClicked(QPoint mousePos)
 {
     int i = mousePos.x() / getGridWidth();
     int j = mousePos.y() / getGridHeight();
@@ -131,11 +112,26 @@ DiagramElement* Diagram::isElementClicked(QPoint mousePos)
     {
         if (element.column == i && element.row == j)
         {
-            update();
             return &element;
         }
     }
     return nullptr;
+}
+
+bool Diagram::onCircleCollision(const QPoint mousePos)
+{
+    std::vector<QPoint> points = createCircles();
+
+    for (const auto& point : points)
+    {
+
+        if ((mousePos.x() - point.x()) * (mousePos.x() - point.x()) +
+            (mousePos.y() - point.y()) * (mousePos.y() - point.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 void Diagram::mouseMoveEvent(QMouseEvent* event)
@@ -195,7 +191,7 @@ void Diagram::currentItemReleased()
     deleteDragElement();
 }
 
-bool Diagram::isWithinDiagramArea(QPoint point) const
+bool Diagram::isWithinDiagramArea(const QPoint point) const
 {
     return point.x() >= 0 && point.x() < getDiagramWidth() &&
            point.y() >= 0 && point.y() < getDiagramHeight();
@@ -205,4 +201,36 @@ void Diagram::deleteDragElement()
 {
     delete m_dragElement;
     m_dragElement = nullptr;
+}
+
+std::vector<QPoint> Diagram::createCircles()
+{
+    int leftPointX  = m_currentElement->column * getGridWidth();
+    int midPointX  = m_currentElement->column * getGridWidth() + getGridWidth() / 2;
+    int rightPointX = m_currentElement->column * getGridWidth() + getGridWidth();
+
+    int midPointY  = m_currentElement->row * getGridHeight() + getGridHeight() / 2 ;
+    int downPointY = m_currentElement->row * getGridHeight() + getGridHeight();
+    switch (m_currentElement->type)
+    {
+        case ToolBoxModel::Element::Block:
+            return {QPoint(leftPointX, midPointY)};
+        case ToolBoxModel::Element::If:
+            return {QPoint(leftPointX, midPointY),
+                    QPoint(midPointX, downPointY),
+                    QPoint(rightPointX, midPointY)};
+        case ToolBoxModel::Element::For:
+            return {QPoint(midPointX, downPointY),
+                    QPoint(rightPointX, midPointY)};
+        default:
+            return {};
+    }
+}
+
+void Diagram::drawCurrElementCircles(QPainter* painter, const std::vector<QPoint> &points)
+{
+    for (const auto& point : points)
+    {
+        painter->drawEllipse(point, CIRCLE_RADIUS, CIRCLE_RADIUS);
+    }
 }
