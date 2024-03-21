@@ -1,12 +1,12 @@
 #include "ToolBoxModel.h"
 #include "DrawElements.h"
 
-void ToolBoxModel::Block::draw(int width, int height, int xOffset, int yOffset)
+void ToolBoxModel::Function::draw(int width, int height, int xOffset, int yOffset)
 {
     drawElement(*this, width, height, xOffset, yOffset);
 }
 
-void ToolBoxModel::Select::draw(int width, int height, int xOffset, int yOffset)
+void ToolBoxModel::Block::draw(int width, int height, int xOffset, int yOffset)
 {
     drawElement(*this, width, height, xOffset, yOffset);
 }

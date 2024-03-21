@@ -11,6 +11,14 @@ template<typename T>
 void drawElement(T, int width, int height, int xOffset, int yOffset);
 
 template<>
+inline void drawElement<ToolBoxModel::Function>(ToolBoxModel::Function,
+                                                int width, int height,
+                                                int xOffset, int yOffset)
+{
+    gCurrentPainter->drawRoundedRect(QRect(xOffset, yOffset, width, height), width / 4, height / 2);
+}
+
+template<>
 inline void drawElement<ToolBoxModel::Block>(ToolBoxModel::Block, int width, int height, int xOffset, int yOffset)
 {
     gCurrentPainter->drawRect(xOffset, yOffset, width, height);
@@ -51,14 +59,6 @@ inline void drawElement<ToolBoxModel::For>(ToolBoxModel::For,
     path.closeSubpath();
 
     gCurrentPainter->drawPath(path);
-}
-
-template<>
-inline void drawElement<ToolBoxModel::Select>(ToolBoxModel::Select,
-                                           int width, int height,
-                                           int xOffset, int yOffset)
-{
-    //painter->drawRect(xOffset, yOffset, width, height);
 }
 
 template<>

@@ -9,15 +9,25 @@ namespace ToolBoxModel
     {
         enum Type
         {
+            Function,
             Block,
-            Select,
             If,
             For,
-            Connect
+            Connector
         };
 
         virtual Type type() const = 0;
         virtual void draw(int width, int height, int xOffset, int yOffset) = 0;
+    };
+
+    struct Function : Element
+    {
+        Element::Type type() const override
+        {
+            return Element::Function;
+        }
+
+        void draw(int width, int height, int xOffset, int yOffset) override;
     };
 
     struct Block : Element
@@ -25,16 +35,6 @@ namespace ToolBoxModel
         Element::Type type() const override
         {
             return Element::Block;
-        }
-
-        void draw(int width, int height, int xOffset, int yOffset) override;
-    };
-
-    struct Select : Element
-    {
-        Element::Type type() const override
-        {
-            return Element::Select;
         }
 
         void draw(int width, int height, int xOffset, int yOffset) override;
@@ -64,7 +64,7 @@ namespace ToolBoxModel
     {
         Element::Type type() const override
         {
-            return Element::Connect;
+            return Element::Connector;
         }
 
         void draw(int width, int height, int xOffset, int yOffset) override;
@@ -76,16 +76,10 @@ namespace ToolBoxModel
 
         Model()
         {
+            m_elements.push_back(std::make_shared<Function>());
+            m_elements.push_back(std::make_shared<Block>());
             m_elements.push_back(std::make_shared<If>());
             m_elements.push_back(std::make_shared<For>());
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
-            m_elements.push_back(std::make_shared<Block>());
         }
     };
     inline Model gModel;

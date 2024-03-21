@@ -4,7 +4,7 @@
 
 #include <QMouseEvent>
 
-#define CIRCLE_RADIUS getGridWidth() / 15
+#define CIRCLE_RADIUS getGridWidth() / 20
 
 Diagram::Diagram()
 {
@@ -40,6 +40,39 @@ void Diagram::paintEvent(QPaintEvent *event)
         }
     }
 
+    if (!m_currentArrow.empty())
+    {
+        QPainterPath path;
+
+        path.moveTo(m_currentArrow.front());
+        for (int i = 1; i < m_currentArrow.size(); ++i)
+        {
+            path.lineTo(m_currentArrow[i]);
+        }
+        path.lineTo(m_newArrowPoint);
+        painter.drawPath(path);
+        update();
+    }
+
+    for (const auto& arrow : m_connectors)
+    {
+        assert(!arrow.empty());
+
+        QPainterPath path;
+
+        for (int i = 1; i < arrow.size(); ++i)
+        {
+            path.moveTo(arrow[i - 1]);
+            path.lineTo(arrow[i]);
+        }
+        painter.drawPath(path);
+    }
+
+    if (m_inputElement)
+    {
+        drawInputElement(&painter);
+    }
+
     if (m_currentElement)
     {
         drawCurrentElement(&painter);
@@ -62,6 +95,10 @@ void Diagram::drawGridElement(const DiagramElement& element)
 {
     switch (element.type)
     {
+        case ToolBoxModel::Element::Function:
+            ToolBoxModel::Function{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            break;
+
         case ToolBoxModel::Element::Block:
             ToolBoxModel::Block{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
             break;
@@ -90,16 +127,26 @@ void Diagram::drawCurrentElement(QPainter* painter)
 
 void Diagram::mousePressEvent(QMouseEvent* event)
 {
-    qDebug() << "Diagram mouse pressed";
-
-    if (m_currentElement && onCircleCollision(event->pos()))
+    if (QPoint point = onCircleCollision(event->pos()); !point.isNull())
     {
-        // TODO : START TO DRAW ARROWS
+        m_currentArrow.emplace_back(point);
+        m_newArrowPoint = point;
     }
-    else
+    else if (onInputCircleCollision(event->pos(), m_currentArrow))
     {
-        m_currentElement = onElementClicked(event->pos());
+        m_connectors.emplace_back(m_currentArrow);
+
+        m_currentArrow.clear();
+        m_inputElement = nullptr;
+        m_currentElement = nullptr;
+        m_newArrowPoint = QPoint();
         update();
+    }
+    else if (!m_currentArrow.empty())
+    {
+        int x = event->pos().x() / getGridWidth() * getGridWidth() + getGridWidth() / 2;
+        int y = event->pos().y() / getGridHeight() * getGridHeight() + getGridHeight() / 2;
+        m_currentArrow.emplace_back(QPoint(x, y));
     }
 }
 
@@ -118,30 +165,59 @@ DiagramElement* Diagram::onElementClicked(QPoint mousePos)
     return nullptr;
 }
 
-bool Diagram::onCircleCollision(const QPoint mousePos)
+QPoint Diagram::onCircleCollision(const QPoint mousePos)
 {
-    std::vector<QPoint> points = createCircles();
-
-    for (const auto& point : points)
+    if (m_currentElement)
     {
+        std::vector<QPoint> points = createCircles();
 
-        if ((mousePos.x() - point.x()) * (mousePos.x() - point.x()) +
-            (mousePos.y() - point.y()) * (mousePos.y() - point.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
+        for (const auto &point: points)
         {
-            return true;
+            // CIRCLE COLLISION
+            if ((mousePos.x() - point.x()) * (mousePos.x() - point.x()) +
+                (mousePos.y() - point.y()) * (mousePos.y() - point.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
+            {
+                return point;
+            }
         }
     }
-    return false;
+    return QPoint();
 }
 
 void Diagram::mouseMoveEvent(QMouseEvent* event)
 {
-    //qDebug() << "Diagram mouse move";
+    DiagramElement* elementPtr = onElementClicked(event->pos());
+    QPoint point = onCircleCollision(event->pos());
+
+    if(!m_currentArrow.empty())
+    {
+        if (elementPtr && elementPtr != m_currentElement)
+        {
+            m_inputElement = elementPtr;
+            update();
+        }
+        else
+        {
+            m_inputElement = nullptr;
+        }
+        m_newArrowPoint = event->pos();
+    }
+
+    if (!elementPtr && point.isNull() && !m_inputElement)
+    {
+        m_currentElement = nullptr;
+        update();
+    }
+    else if(!m_currentElement && elementPtr && !m_inputElement)
+    {
+        m_currentElement = elementPtr;
+        update();
+    }
 }
 
 void Diagram::mouseReleaseEvent(QMouseEvent* event)
 {
-    qDebug() << "Diagram mouse release";
+    //qDebug() << "Diagram mouse release";
 }
 
 void Diagram::setCurrentElement(ToolBoxModel::Element::Type type)
@@ -213,17 +289,19 @@ std::vector<QPoint> Diagram::createCircles()
     int downPointY = m_currentElement->row * getGridHeight() + getGridHeight();
     switch (m_currentElement->type)
     {
+        case ToolBoxModel::Element::Function:
+            return {QPoint(midPointX, downPointY)};
         case ToolBoxModel::Element::Block:
             return {QPoint(leftPointX, midPointY)};
+
         case ToolBoxModel::Element::If:
             return {QPoint(leftPointX, midPointY),
                     QPoint(midPointX, downPointY),
                     QPoint(rightPointX, midPointY)};
+
         case ToolBoxModel::Element::For:
             return {QPoint(midPointX, downPointY),
                     QPoint(rightPointX, midPointY)};
-        default:
-            return {};
     }
 }
 
@@ -233,4 +311,73 @@ void Diagram::drawCurrElementCircles(QPainter* painter, const std::vector<QPoint
     {
         painter->drawEllipse(point, CIRCLE_RADIUS, CIRCLE_RADIUS);
     }
+}
+
+void Diagram::drawInputElement(QPainter* painter)
+{
+    QBrush brush(Qt::darkGray);
+    painter->setBrush(brush);
+    QPen pen(Qt::white);
+    painter->setPen(pen);
+
+    drawGridElement(*m_inputElement);
+
+    if (m_inputElement->type != ToolBoxModel::Element::Function)
+    {
+        int x = m_inputElement->column * getGridWidth() + getGridWidth() / 2;
+        int y = m_inputElement->row * getGridHeight();
+        drawCurrElementCircles(painter, {QPoint(x, y)});
+    }
+}
+
+bool Diagram::onInputCircleCollision(const QPoint mousePos, Connector& currentArrow)
+{
+    if (m_inputElement)
+    {
+        m_inputElement->onInputCircleCollision(mousePos, currentArrow);
+        return true;
+    }
+    return false;
+}
+
+bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& currentArrow)
+{
+    switch(type)
+    {
+        case ToolBoxModel::Element::Function:
+            break;
+        case ToolBoxModel::Element::Block:
+        case ToolBoxModel::Element::If:
+        {
+            int x = column * getGridWidth() + getGridWidth() / 2;
+            int y = row * getGridHeight();
+            if( (x - mousePos.x()) * (x - mousePos.x()) +
+                    (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
+            {
+                currentArrow.emplace_back(QPoint(x, y));
+                return true;
+            }
+            break;
+        }
+        case ToolBoxModel::Element::For:
+            int x = column * getGridWidth() + getGridWidth() / 2;
+            int y = row * getGridHeight();
+            if( (x - mousePos.x()) * (x - mousePos.x()) +
+                    (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
+            {
+                currentArrow.emplace_back(QPoint(x, y));
+                return true;
+            }
+
+            x = column * getGridWidth();
+            y = row * getGridHeight() + getGridHeight() / 2;
+            if( (x - mousePos.x()) * (x - mousePos.x()) +
+                    (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
+            {
+                currentArrow.emplace_back(QPoint(x, y));
+                return true;
+            }
+            break;
+    }
+    return false;
 }

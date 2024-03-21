@@ -13,6 +13,7 @@ DragObject::DragObject(QWidget *parent) :
 {
     setFrameStyle(QFrame::Box | QFrame::Raised);
     setVisible(false);
+    setStyleSheet("background-color: rgba(0, 0, 0, 0);");
 
     resize(ELEMENT_WIDTH * 2, ELEMENT_HEIGHT * 2);
 }
@@ -36,6 +37,10 @@ void DragObject::paintEvent(QPaintEvent *event)
 
         switch(m_objectType)
         {
+            case ToolBoxModel::Element::Function:
+                ToolBoxModel::Function{}.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
+                break;
+
             case ToolBoxModel::Element::Block:
                 ToolBoxModel::Block{}.draw(ELEMENT_WIDTH, ELEMENT_HEIGHT, localPos.x(), localPos.y());
                 break;

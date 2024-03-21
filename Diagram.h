@@ -3,6 +3,9 @@
 #include "ToolBoxModel.h"
 
 #include <QWidget>
+#include <map>
+
+using Connector = std::vector<QPoint>;
 
 inline int getDiagramWidth()
 {
@@ -29,14 +32,32 @@ struct DiagramElement
     ToolBoxModel::Element::Type type;
     int column;
     int row;
+
+    bool onInputCircleCollision(const QPoint mousePos, Connector& connector);
+};
+
+struct Graph
+{
+    struct Node
+    {
+        DiagramElement* m_element;
+    };
+
+    std::map<std::pair<Node, Node>> m_graph;
 };
 
 class Diagram : public QWidget
 {
     std::vector<DiagramElement> m_diagramElements;
-    DiagramElement* m_dragElement = nullptr;
-    DiagramElement* m_currentElement = nullptr;
-//    std::vector<>   m_arrow;
+    std::vector<Connector>      m_connectors;
+    Graph                       m_graph;
+
+    DiagramElement*             m_dragElement = nullptr;
+    DiagramElement*             m_currentElement = nullptr;
+    DiagramElement*             m_inputElement = nullptr;
+
+    Connector                   m_currentArrow;
+    QPoint                      m_newArrowPoint;
 
 public:
     Diagram();
@@ -58,5 +79,7 @@ private:
     void deleteDragElement();
     std::vector<QPoint> createCircles();
     void drawCurrElementCircles(QPainter* painter, const std::vector<QPoint>& points);
-    bool onCircleCollision(const QPoint mousePos);
+    QPoint onCircleCollision(const QPoint mousePos);
+    void drawInputElement(QPainter* painter);
+    bool onInputCircleCollision(const QPoint mousePos, Connector& connector);
 };
