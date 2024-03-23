@@ -22,4 +22,5 @@ public:
 
 private:
     void initToolBox();
+    void generate();
 };

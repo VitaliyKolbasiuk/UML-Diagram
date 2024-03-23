@@ -28,6 +28,7 @@ set(PROJECT_SOURCES
         DrawElements.h
         DragObject.cpp
         DragObject.h
+        Python.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR})
