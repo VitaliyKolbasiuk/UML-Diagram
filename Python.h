@@ -1,6 +1,12 @@
 #pragma once
 
-namespace code {
+#include <string>
+#include <vector>
+#include <memory>
+
+struct DiagramElement;
+class Diagram;
+namespace python_code {
 
     struct Element
     {
@@ -68,4 +74,7 @@ namespace code {
         {
         }
     };
+
+    Code diagramToPythonPseudoCode(const Diagram& diagram);
+    Code elementToPseudoCode(const Diagram& diagram, const DiagramElement* element);
 }

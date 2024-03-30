@@ -44,10 +44,10 @@ void Diagram::paintEvent(QPaintEvent *event)
     {
         QPainterPath path;
 
-        path.moveTo(m_currentArrow.front());
+        path.moveTo(m_currentArrow.front().m_point);
         for (int i = 1; i < m_currentArrow.size(); ++i)
         {
-            path.lineTo(m_currentArrow[i]);
+            path.lineTo(m_currentArrow[i].m_point);
         }
         path.lineTo(m_newArrowPoint);
         painter.drawPath(path);
@@ -62,8 +62,8 @@ void Diagram::paintEvent(QPaintEvent *event)
 
         for (int i = 1; i < arrow.size(); ++i)
         {
-            path.moveTo(arrow[i - 1]);
-            path.lineTo(arrow[i]);
+            path.moveTo(arrow[i - 1].m_point);
+            path.lineTo(arrow[i].m_point);
         }
         painter.drawPath(path);
     }
@@ -127,13 +127,15 @@ void Diagram::drawCurrentElement(QPainter* painter)
 
 void Diagram::mousePressEvent(QMouseEvent* event)
 {
-    if (ConnectionPoint connectionPoint = onCircleCollision(event->pos()); !point.isNull())
+    if (ConnectionPoint connectionPoint = onCircleCollision(event->pos()); !connectionPoint.m_point.isNull())
     {
-        m_currentArrow.emplace_back(point);
-        m_newArrowPoint = point;
+        m_currentArrow.emplace_back(connectionPoint);
+        m_newArrowPoint = connectionPoint.m_point;
     }
     else if (onInputCircleCollision(event->pos(), m_currentArrow))
     {
+        m_currentArrow.back().m_element = m_inputElement;
+        m_currentArrow.back().m_type = ConnectionPoint::input;
         m_connectors.emplace_back(m_currentArrow);
 
         m_currentArrow.clear();
@@ -181,7 +183,7 @@ ConnectionPoint Diagram::onCircleCollision(const QPoint mousePos)
             }
         }
     }
-    return QPoint();
+    return ConnectionPoint();
 }
 
 void Diagram::mouseMoveEvent(QMouseEvent* event)
@@ -203,7 +205,7 @@ void Diagram::mouseMoveEvent(QMouseEvent* event)
         m_newArrowPoint = event->pos();
     }
 
-    if (!elementPtr && point.m_point.isNull() && !m_inputElement)
+    if (!elementPtr && connectionPoint.m_point.isNull() && !m_inputElement)
     {
         m_currentElement = nullptr;
         update();
@@ -279,7 +281,7 @@ void Diagram::deleteDragElement()
     m_dragElement = nullptr;
 }
 
-std::vector<ConnectionPoint> Diagram::createCircles()
+std::vector<ConnectionPoint> Diagram::createCircles() const
 {
     int leftPointX  = m_currentElement->column * getGridWidth();
     int midPointX  = m_currentElement->column * getGridWidth() + getGridWidth() / 2;
@@ -292,7 +294,7 @@ std::vector<ConnectionPoint> Diagram::createCircles()
         case ToolBoxModel::Element::Function:
             return {{QPoint(midPointX, downPointY), m_currentElement, ConnectionPoint::output}};
         case ToolBoxModel::Element::Block:
-            return {{QPoint(leftPointX, midPointY), m_currentElement, ConnectionPoint::output}};
+            return {{QPoint(midPointX, downPointY), m_currentElement, ConnectionPoint::output}};
 
         case ToolBoxModel::Element::If:
             return {{QPoint(leftPointX, midPointY), m_currentElement, ConnectionPoint::no},
@@ -354,7 +356,7 @@ bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& cu
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                     (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
-                currentArrow.emplace_back(QPoint(x, y));
+                currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
                 return true;
             }
             break;
@@ -365,7 +367,7 @@ bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& cu
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                     (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
-                currentArrow.emplace_back(QPoint(x, y));
+                currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
                 return true;
             }
 
@@ -374,12 +376,96 @@ bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& cu
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                     (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
-                currentArrow.emplace_back(QPoint(x, y));
+                currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
                 return true;
             }
             break;
     }
     return false;
+}
+
+DiagramElement* Diagram::findFirstElement() const
+{
+    DiagramElement* highestElement = &m_diagramElements.front();
+    for (const auto& element : m_diagramElements)
+    {
+        if (element.row < highestElement->row)
+        {
+            highestElement = &element;
+        }
+        else if (element.row == highestElement->row)
+        {
+            if (element.column < highestElement->column)
+            {
+                highestElement = &element;
+            }
+        }
+    }
+    return highestElement;
+}
+
+std::vector<const Connector*> Diagram::getInputConnector(const DiagramElement* element) const
+{
+    std::vector<const Connector*> connectors;
+    for (const auto& connector : m_connectors)
+    {
+        if (connector.front().m_element == element)
+        {
+            connectors.emplace_back(&connector);
+        }
+    }
+    return connectors;
+}
+
+const Connector* Diagram::getOutputConnector(const DiagramElement* element) const
+{
+    for (const auto& connector : m_connectors)
+    {
+        if (connector.front().m_element == element)
+        {
+            return &connector;
+        }
+    }
+    return nullptr;
+}
+
+const Connector* Diagram::getNoOutputConnector(const DiagramElement* element) const
+{
+    QPoint outputPoint(element->column * getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    for (const auto& connector : m_connectors)
+    {
+        if (connector.front().m_point == outputPoint)
+        {
+            return &connector;
+        }
+    }
+    return nullptr;
+}
+
+const Connector* Diagram::getYesOutputConnector(const DiagramElement* element) const
+{
+    QPoint outputPoint(element->column * getGridWidth() + getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    for (const auto& connector : m_connectors)
+    {
+        if (connector.front().m_point == outputPoint)
+        {
+            return &connector;
+        }
+    }
+    return nullptr;
+}
+
+const Connector* Diagram::getBodyOutputConnector(const DiagramElement* element) const
+{
+    QPoint outputPoint(element->column * getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    for (const auto& connector : m_connectors)
+    {
+        if (connector.front().m_point == outputPoint)
+        {
+            return &connector;
+        }
+    }
+    return nullptr;
 }
 
 

@@ -50,7 +50,7 @@ struct Graph
 struct ConnectionPoint
 {
     QPoint m_point;
-    DiagramElement* element = nullptr;
+    DiagramElement* m_element = nullptr;
     enum {input, yes, no, for_body, output} m_type = output;
 };
 
@@ -78,6 +78,7 @@ public:
     void setCurrentElement(ToolBoxModel::Element::Type type);
     void currentItemReleased();
     Graph& generateGraph();
+    DiagramElement* findFirstElement() const;
 
 private:
     void drawGridElement(const DiagramElement& element);
@@ -86,9 +87,16 @@ private:
     void drawCurrentElement(QPainter* painter);
     bool isWithinDiagramArea(const QPoint point) const;
     void deleteDragElement();
-    std::vector<ConnectionPoint> createCircles();
+    std::vector<ConnectionPoint> createCircles() const;
     void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
     ConnectionPoint onCircleCollision(const QPoint mousePos);
     void drawInputElement(QPainter* painter);
     bool onInputCircleCollision(const QPoint mousePos, Connector& connector);
+
+public:
+    std::vector<const Connector*> getInputConnector(const DiagramElement* element) const;
+    const Connector* getOutputConnector(const DiagramElement* element) const;
+    const Connector* getYesOutputConnector(const DiagramElement* element) const;
+    const Connector* getNoOutputConnector(const DiagramElement* element) const;
+    const Connector* getBodyOutputConnector(const DiagramElement* element) const;
 };
