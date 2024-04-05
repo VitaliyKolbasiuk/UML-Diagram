@@ -1,4 +1,4 @@
-#pragma once
+    #pragma once
 
 #include <string>
 #include <vector>
@@ -47,12 +47,28 @@ namespace python_code {
 
     struct If : public Element
     {
+        If (std::string condition, ElementList yes, ElementList no) : m_condition(condition), m_yesList(yes), m_noList(no) {}
         std::string m_condition;
         ElementList m_yesList;
         ElementList m_noList;
 
         virtual void generate( std::ostream& output, int indent ) const override
         {
+            output << "IF" << std::endl;
+            output << "YES BODY" << std::endl;
+            for (int i = 0; i < indent; ++i)
+            {
+                output << ' ';
+            }
+            for (const auto& element : m_yesList)
+            {
+                element->generate(output, indent + 4);
+            }
+            output << std::endl << "NO BODY" << std::endl;
+            for (const auto& element : m_noList)
+            {
+                element->generate(output, indent + 4);
+            }
         }
     };
 
@@ -68,13 +84,23 @@ namespace python_code {
 
     struct Block : public Element
     {
+        Block() {}
         std::vector<std::string> m_body;
 
         virtual void generate( std::ostream& output, int indent ) const override
         {
+            for(int i = 0; i < indent; ++i)
+            {
+                output << ' ';
+            }
+            output << "BLOCK " << std::endl;
+            for(const auto& line : m_body)
+            {
+                output << line << std::endl;
+            }
         }
     };
 
     Code diagramToPythonPseudoCode(const Diagram& diagram);
-    Code elementToPseudoCode(const Diagram& diagram, const DiagramElement* element);
+    std::shared_ptr<Element> elementToPseudoCode(const Diagram& diagram, const DiagramElement* diagramElement);
 }

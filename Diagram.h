@@ -78,7 +78,7 @@ public:
     void setCurrentElement(ToolBoxModel::Element::Type type);
     void currentItemReleased();
     Graph& generateGraph();
-    DiagramElement* findFirstElement() const;
+    const DiagramElement* findFirstElement() const;
 
 private:
     void drawGridElement(const DiagramElement& element);
@@ -92,6 +92,7 @@ private:
     ConnectionPoint onCircleCollision(const QPoint mousePos);
     void drawInputElement(QPainter* painter);
     bool onInputCircleCollision(const QPoint mousePos, Connector& connector);
+
 
 public:
     std::vector<const Connector*> getInputConnector(const DiagramElement* element) const;

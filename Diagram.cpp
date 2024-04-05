@@ -1,8 +1,11 @@
 #include "Diagram.h"
 #include "DrawElements.h"
 #include "ToolBoxModel.h"
+#include "Python.h"
 
 #include <QMouseEvent>
+#include <sstream>
+#include <string>
 
 #define CIRCLE_RADIUS getGridWidth() / 20
 
@@ -11,6 +14,7 @@ Diagram::Diagram()
     setMinimumSize(getDiagramWidth() + 10, getDiagramHeight() + 10);
 
     setMouseTracking(true);
+
 }
 
 void Diagram::paintEvent(QPaintEvent *event)
@@ -142,6 +146,17 @@ void Diagram::mousePressEvent(QMouseEvent* event)
         m_inputElement = nullptr;
         m_currentElement = nullptr;
         m_newArrowPoint = QPoint();
+
+        python_code::Code pythonCode = python_code::diagramToPythonPseudoCode(*this);
+        std::ostringstream oss;
+        //int indent = 4;
+        for(const auto& element : pythonCode)
+        {
+            element->generate(oss, 0);
+        }
+        qDebug() << "--------------";
+        qDebug() << oss.str();
+
         update();
     }
     else if (!m_currentArrow.empty())
@@ -384,20 +399,20 @@ bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& cu
     return false;
 }
 
-DiagramElement* Diagram::findFirstElement() const
+const DiagramElement* Diagram::findFirstElement() const
 {
-    DiagramElement* highestElement = &m_diagramElements.front();
+    const DiagramElement* highestElement = &m_diagramElements.front();
     for (const auto& element : m_diagramElements)
     {
         if (element.row < highestElement->row)
         {
-            highestElement = &element;
+            return &element;
         }
         else if (element.row == highestElement->row)
         {
             if (element.column < highestElement->column)
             {
-                highestElement = &element;
+                return &element;
             }
         }
     }
@@ -431,10 +446,11 @@ const Connector* Diagram::getOutputConnector(const DiagramElement* element) cons
 
 const Connector* Diagram::getNoOutputConnector(const DiagramElement* element) const
 {
-    QPoint outputPoint(element->column * getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    QPoint leftOutputPoint(element->column * getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    QPoint rightOutputPoint(element->column * getGridWidth() + getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
     for (const auto& connector : m_connectors)
     {
-        if (connector.front().m_point == outputPoint)
+        if (connector.front().m_point == leftOutputPoint || connector.front().m_point == rightOutputPoint)
         {
             return &connector;
         }
@@ -444,7 +460,7 @@ const Connector* Diagram::getNoOutputConnector(const DiagramElement* element) co
 
 const Connector* Diagram::getYesOutputConnector(const DiagramElement* element) const
 {
-    QPoint outputPoint(element->column * getGridWidth() + getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    QPoint outputPoint(element->column * getGridWidth() + getGridWidth() / 2, element->row * getGridHeight() + getGridHeight());
     for (const auto& connector : m_connectors)
     {
         if (connector.front().m_point == outputPoint)
