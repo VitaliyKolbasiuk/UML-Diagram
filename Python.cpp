@@ -7,7 +7,7 @@ static const DiagramElement* findEndOfForBody(const Diagram& diagram, const Diag
 
 std::shared_ptr<python_code::Element> python_code::elementToPseudoCode(const Diagram& diagram, const DiagramElement* diagramElement)
 {
-    switch(diagramElement->type)
+    switch(diagramElement->m_type)
     {
         case ToolBoxModel::Element::Block:
         {
@@ -147,7 +147,7 @@ const DiagramElement* findNextElement(const Diagram& diagram, const DiagramEleme
     {
         return nullptr;
     }
-    switch(element->type)
+    switch(element->m_type)
     {
         case ToolBoxModel::Element::For:
         case ToolBoxModel::Element::Block:

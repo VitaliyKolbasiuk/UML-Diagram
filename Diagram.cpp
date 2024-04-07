@@ -2,6 +2,7 @@
 #include "DrawElements.h"
 #include "ToolBoxModel.h"
 #include "Python.h"
+#include "ElementText.h"
 
 #include <QMouseEvent>
 #include <sstream>
@@ -97,22 +98,22 @@ void Diagram::drawGrid(QPainter* painter)
 
 void Diagram::drawGridElement(const DiagramElement& element)
 {
-    switch (element.type)
+    switch (element.m_type)
     {
         case ToolBoxModel::Element::Function:
-            ToolBoxModel::Function{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            ToolBoxModel::Function{}.draw(getGridWidth(), getGridHeight(), element.m_column * getGridWidth(), element.m_row * getGridHeight());
             break;
 
         case ToolBoxModel::Element::Block:
-            ToolBoxModel::Block{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            ToolBoxModel::Block{}.draw(getGridWidth(), getGridHeight(), element.m_column * getGridWidth(), element.m_row * getGridHeight());
             break;
 
         case ToolBoxModel::Element::If:
-            ToolBoxModel::If{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            ToolBoxModel::If{}.draw(getGridWidth(), getGridHeight(), element.m_column * getGridWidth(), element.m_row * getGridHeight());
             break;
 
         case ToolBoxModel::Element::For:
-            ToolBoxModel::For{}.draw(getGridWidth(), getGridHeight(), element.column * getGridWidth(), element.row * getGridHeight());
+            ToolBoxModel::For{}.draw(getGridWidth(), getGridHeight(), element.m_column * getGridWidth(), element.m_row * getGridHeight());
             break;
     }
 }
@@ -174,7 +175,7 @@ DiagramElement* Diagram::onElementClicked(QPoint mousePos)
 
     for(auto& element : m_diagramElements)
     {
-        if (element.column == i && element.row == j)
+        if (element.m_column == i && element.m_row == j)
         {
             return &element;
         }
@@ -237,6 +238,22 @@ void Diagram::mouseReleaseEvent(QMouseEvent* event)
     //qDebug() << "Diagram mouse release";
 }
 
+void Diagram::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    for (auto& element : m_diagramElements)
+    {
+        if (element.onElementCollision(event->pos()))
+        {
+            ElementText elementText(this);
+            if (elementText.exec() == QDialog::Accepted)
+            {
+                 element.m_text = elementText.getText();
+            }
+            return;
+        }
+    }
+}
+
 void Diagram::setCurrentElement(ToolBoxModel::Element::Type type)
 {
     QPoint mousePos = mapFromGlobal(QCursor::pos());
@@ -253,8 +270,8 @@ void Diagram::setCurrentElement(ToolBoxModel::Element::Type type)
     }
     else
     {
-        m_dragElement->column = i;
-        m_dragElement->row = j;
+        m_dragElement->m_column = i;
+        m_dragElement->m_row = j;
     }
 }
 
@@ -271,15 +288,15 @@ void Diagram::currentItemReleased()
     int j = mousePos.y()  / getGridHeight();
     for(const auto& element : m_diagramElements)
     {
-        if (element.column == i && element.row == j)
+        if (element.m_column == i && element.m_row == j)
         {
             deleteDragElement();
             return;
         }
     }
 
-    m_dragElement->column = i;
-    m_dragElement->row = j;
+    m_dragElement->m_column = i;
+    m_dragElement->m_row = j;
     m_diagramElements.emplace_back(*m_dragElement);
     deleteDragElement();
 }
@@ -296,15 +313,15 @@ void Diagram::deleteDragElement()
     m_dragElement = nullptr;
 }
 
-std::vector<ConnectionPoint> Diagram::createCircles() const
+Connector Diagram::createCircles() const
 {
-    int leftPointX  = m_currentElement->column * getGridWidth();
-    int midPointX  = m_currentElement->column * getGridWidth() + getGridWidth() / 2;
-    int rightPointX = m_currentElement->column * getGridWidth() + getGridWidth();
+    int leftPointX  = m_currentElement->m_column * getGridWidth();
+    int midPointX  = m_currentElement->m_column * getGridWidth() + getGridWidth() / 2;
+    int rightPointX = m_currentElement->m_column * getGridWidth() + getGridWidth();
 
-    int midPointY  = m_currentElement->row * getGridHeight() + getGridHeight() / 2 ;
-    int downPointY = m_currentElement->row * getGridHeight() + getGridHeight();
-    switch (m_currentElement->type)
+    int midPointY  = m_currentElement->m_row * getGridHeight() + getGridHeight() / 2 ;
+    int downPointY = m_currentElement->m_row * getGridHeight() + getGridHeight();
+    switch (m_currentElement->m_type)
     {
         case ToolBoxModel::Element::Function:
             return {{QPoint(midPointX, downPointY), m_currentElement, ConnectionPoint::output}};
@@ -342,14 +359,14 @@ void Diagram::drawInputElement(QPainter* painter)
     drawCurrElementCircles(painter, createInputCircles());
 }
 
-std::vector<ConnectionPoint> Diagram::createInputCircles() const
+Connector Diagram::createInputCircles() const
 {
-    int leftPointX  = m_inputElement->column * getGridWidth();
-    int midPointX  = m_inputElement->column * getGridWidth() + getGridWidth() / 2;
+    int leftPointX  = m_inputElement->m_column * getGridWidth();
+    int midPointX  = m_inputElement->m_column * getGridWidth() + getGridWidth() / 2;
 
-    int topPointY = m_inputElement->row * getGridHeight();
-    int midPointY  = m_inputElement->row * getGridHeight() + getGridHeight() / 2 ;
-    switch(m_inputElement->type)
+    int topPointY = m_inputElement->m_row * getGridHeight();
+    int midPointY  = m_inputElement->m_row * getGridHeight() + getGridHeight() / 2 ;
+    switch(m_inputElement->m_type)
     {
         case ToolBoxModel::Element::Function:
             return {};
@@ -374,17 +391,17 @@ bool Diagram::onInputCircleCollision(const QPoint mousePos, Connector& currentAr
     return false;
 }
 
-bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& currentArrow)
+bool DiagramElement::onInputCircleCollision(const QPoint& mousePos, Connector& currentArrow) const
 {
-    switch(type)
+    switch(m_type)
     {
         case ToolBoxModel::Element::Function:
             break;
         case ToolBoxModel::Element::Block:
         case ToolBoxModel::Element::If:
         {
-            int x = column * getGridWidth() + getGridWidth() / 2;
-            int y = row * getGridHeight();
+            int x = m_column * getGridWidth() + getGridWidth() / 2;
+            int y = m_row * getGridHeight();
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                     (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
@@ -394,8 +411,8 @@ bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& cu
             break;
         }
         case ToolBoxModel::Element::For:
-            int x = column * getGridWidth() + getGridWidth() / 2;
-            int y = row * getGridHeight();
+            int x = m_column * getGridWidth() + getGridWidth() / 2;
+            int y = m_row * getGridHeight();
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                     (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
@@ -403,8 +420,8 @@ bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& cu
                 return true;
             }
 
-            x = column * getGridWidth();
-            y = row * getGridHeight() + getGridHeight() / 2;
+            x = m_column * getGridWidth();
+            y = m_row * getGridHeight() + getGridHeight() / 2;
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                     (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
@@ -416,18 +433,57 @@ bool DiagramElement::onInputCircleCollision(const QPoint mousePos, Connector& cu
     return false;
 }
 
+bool DiagramElement::onElementCollision(const QPoint &mousePos) const
+{
+    int x = m_column * getGridWidth();
+    int y = m_row * getGridHeight();
+
+    QPainterPath path;
+    switch(m_type)
+    {
+        case ToolBoxModel::Element::Function:
+        {
+            path.addRoundedRect(QRect(x, y, getGridWidth(), getGridHeight()), getGridWidth() / 4, getGridHeight() / 2);
+            break;
+        }
+        case ToolBoxModel::Element::Block:
+        {
+            return QRect(x, y, getGridWidth(), getGridHeight()).contains(mousePos);
+        }
+        case ToolBoxModel::Element::If:
+        {
+            path.moveTo(x + getGridWidth() / 2, y);
+            path.lineTo(x + getGridWidth(), y + getGridHeight() / 2);
+            path.lineTo(x + getGridWidth() / 2, y + getGridHeight());
+            path.lineTo(x, y + getGridHeight() / 2);
+            break;
+        }
+        case ToolBoxModel::Element::For:
+        {
+            path.moveTo(x, y + getGridHeight() / 2);
+            path.lineTo(x + getGridWidth()  / 4, y);
+            path.lineTo(x + getGridWidth()  / 1.33, y);
+            path.lineTo(x + getGridWidth() , y + getGridHeight() / 2);
+            path.lineTo(x + getGridWidth()  / 1.33, y + getGridHeight());
+            path.lineTo(x + getGridWidth()  / 4, y + getGridHeight());
+            break;
+        }
+    }
+    return path.contains(mousePos);
+}
+
 const DiagramElement* Diagram::findFirstElement() const
 {
     const DiagramElement* highestElement = &m_diagramElements.front();
     for (const auto& element : m_diagramElements)
     {
-        if (element.row < highestElement->row)
+        if (element.m_row < highestElement->m_row)
         {
             return &element;
         }
-        else if (element.row == highestElement->row)
+        else if (element.m_row == highestElement->m_row)
         {
-            if (element.column < highestElement->column)
+            if (element.m_column < highestElement->m_column)
             {
                 return &element;
             }
@@ -467,8 +523,8 @@ const Connector* Diagram::getOutputConnector(const DiagramElement* element) cons
 
 const Connector* Diagram::getNoOutputConnector(const DiagramElement* element) const
 {
-    QPoint leftOutputPoint(element->column * getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
-    QPoint rightOutputPoint(element->column * getGridWidth() + getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    QPoint leftOutputPoint(element->m_column * getGridWidth(), element->m_row * getGridHeight() + getGridHeight() / 2);
+    QPoint rightOutputPoint(element->m_column * getGridWidth() + getGridWidth(), element->m_row * getGridHeight() + getGridHeight() / 2);
     for (const auto& connector : m_connectors)
     {
         if (connector.front().m_point == leftOutputPoint || connector.front().m_point == rightOutputPoint)
@@ -481,7 +537,7 @@ const Connector* Diagram::getNoOutputConnector(const DiagramElement* element) co
 
 const Connector* Diagram::getYesOutputConnector(const DiagramElement* element) const
 {
-    QPoint outputPoint(element->column * getGridWidth() + getGridWidth() / 2, element->row * getGridHeight() + getGridHeight());
+    QPoint outputPoint(element->m_column * getGridWidth() + getGridWidth() / 2, element->m_row * getGridHeight() + getGridHeight());
     for (const auto& connector : m_connectors)
     {
         if (connector.front().m_point == outputPoint)
@@ -494,7 +550,7 @@ const Connector* Diagram::getYesOutputConnector(const DiagramElement* element) c
 
 const Connector* Diagram::getBodyOutputConnector(const DiagramElement* element) const
 {
-    QPoint outputPoint(element->column * getGridWidth() + getGridWidth() / 2, element->row * getGridHeight() + getGridHeight());
+    QPoint outputPoint(element->m_column * getGridWidth() + getGridWidth() / 2, element->m_row * getGridHeight() + getGridHeight());
     for (const auto& connector : m_connectors)
     {
         if (connector.front().m_point == outputPoint)

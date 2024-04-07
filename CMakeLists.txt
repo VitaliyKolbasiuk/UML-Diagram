@@ -29,6 +29,9 @@ set(PROJECT_SOURCES
         DragObject.cpp
         DragObject.h
         Python.h
+        ElementText.cpp
+        ElementText.h
+        ElementText.ui
 )
 
 include_directories(${CMAKE_SOURCE_DIR})

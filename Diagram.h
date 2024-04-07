@@ -30,21 +30,13 @@ inline int getGridHeight()
 
 struct DiagramElement
 {
-    ToolBoxModel::Element::Type type;
-    int column;
-    int row;
+    ToolBoxModel::Element::Type m_type;
+    int m_column;
+    int m_row;
+    QString m_text;
 
-    bool onInputCircleCollision(const QPoint mousePos, Connector& connector);
-};
-
-struct Graph
-{
-    struct Node
-    {
-        DiagramElement* m_element;
-    };
-
-    std::map<Node, Node> m_graph;
+    bool onInputCircleCollision(const QPoint& mousePos, Connector& connector) const;
+    bool onElementCollision(const QPoint& mousePos) const;
 };
 
 struct ConnectionPoint
@@ -60,7 +52,6 @@ class Diagram : public QWidget
 
     std::vector<DiagramElement> m_diagramElements;
     std::vector<Connector>      m_connectors;
-    Graph                       m_graph;
 
     DiagramElement*             m_dragElement = nullptr;
     DiagramElement*             m_currentElement = nullptr;
@@ -79,10 +70,10 @@ public:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
 
     void setCurrentElement(ToolBoxModel::Element::Type type);
     void currentItemReleased();
-    Graph& generateGraph();
     const DiagramElement* findFirstElement() const;
 
 private:
@@ -92,8 +83,8 @@ private:
     void drawCurrentElement(QPainter* painter);
     bool isWithinDiagramArea(const QPoint point) const;
     void deleteDragElement();
-    std::vector<ConnectionPoint> createCircles() const;
-    std::vector<ConnectionPoint> createInputCircles() const;
+    Connector createCircles() const;
+    Connector createInputCircles() const;
     void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
     ConnectionPoint onCircleCollision(const QPoint mousePos);
     void drawInputElement(QPainter* painter);

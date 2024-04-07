@@ -51,7 +51,10 @@ namespace python_code {
         ElementList m_yesList;
         ElementList m_noList;
 
-        If (std::string condition, ElementList yes, ElementList no) : m_condition(condition), m_yesList(yes), m_noList(no) {}
+        If (const std::string& condition, const ElementList& yes, const ElementList& no) : m_condition(condition),
+                                                                                           m_yesList(yes),
+                                                                                           m_noList(no)
+        {}
 
         virtual void generate( std::ostream& output, int indent ) const override
         {
@@ -81,7 +84,7 @@ namespace python_code {
         std::string m_condition;
         ElementList m_body;
 
-        For (std::string condition, ElementList body) : m_condition(condition), m_body(body){}
+        For (const std::string& condition, const ElementList& body) : m_condition(condition), m_body(body){}
 
         virtual void generate( std::ostream& output, int indent ) const override
         {
