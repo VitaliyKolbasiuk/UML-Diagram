@@ -20,6 +20,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+public slots:
+    void outputCode(const QString& code);
+
 private:
     void initToolBox();
     void generate();

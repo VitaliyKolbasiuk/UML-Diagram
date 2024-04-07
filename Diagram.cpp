@@ -149,13 +149,13 @@ void Diagram::mousePressEvent(QMouseEvent* event)
 
         python_code::Code pythonCode = python_code::diagramToPythonPseudoCode(*this);
         std::ostringstream oss;
-        //int indent = 4;
         for(const auto& element : pythonCode)
         {
             element->generate(oss, 0);
         }
-        qDebug() << "--------------";
-        qDebug() << oss.str();
+        emit codeGenerated(QString::fromStdString(oss.str()));
+        // qDebug() << "--------------";
+        // qDebug() << oss.str();
 
         update();
     }
@@ -320,6 +320,7 @@ std::vector<ConnectionPoint> Diagram::createCircles() const
             return {{QPoint(midPointX, downPointY), m_currentElement, ConnectionPoint::for_body},
                     {QPoint(rightPointX, midPointY),  m_currentElement, ConnectionPoint::output}};
     }
+    return {};
 }
 
 void Diagram::drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points)
@@ -338,13 +339,29 @@ void Diagram::drawInputElement(QPainter* painter)
     painter->setPen(pen);
 
     drawGridElement(*m_inputElement);
+    drawCurrElementCircles(painter, createInputCircles());
+}
 
-    if (m_inputElement->type != ToolBoxModel::Element::Function)
+std::vector<ConnectionPoint> Diagram::createInputCircles() const
+{
+    int leftPointX  = m_inputElement->column * getGridWidth();
+    int midPointX  = m_inputElement->column * getGridWidth() + getGridWidth() / 2;
+
+    int topPointY = m_inputElement->row * getGridHeight();
+    int midPointY  = m_inputElement->row * getGridHeight() + getGridHeight() / 2 ;
+    switch(m_inputElement->type)
     {
-        int x = m_inputElement->column * getGridWidth() + getGridWidth() / 2;
-        int y = m_inputElement->row * getGridHeight();
-        drawCurrElementCircles(painter, {{QPoint(x, y), nullptr, ConnectionPoint::no}});
+        case ToolBoxModel::Element::Function:
+            return {};
+        case ToolBoxModel::Element::Block:
+        case ToolBoxModel::Element::If:
+            return {{QPoint(midPointX, topPointY), m_inputElement, ConnectionPoint::input}};
+
+        case ToolBoxModel::Element::For:
+            return {{QPoint(leftPointX, midPointY), m_inputElement, ConnectionPoint::input},
+                    {QPoint(midPointX, topPointY), m_inputElement, ConnectionPoint::input}};
     }
+    return {};
 }
 
 bool Diagram::onInputCircleCollision(const QPoint mousePos, Connector& currentArrow)
@@ -438,7 +455,11 @@ const Connector* Diagram::getOutputConnector(const DiagramElement* element) cons
     {
         if (connector.front().m_element == element)
         {
-            return &connector;
+            if (connector.front().m_type == ConnectionPoint::output)
+            {
+                return &connector;
+            }
+            continue;
         }
     }
     return nullptr;
@@ -473,7 +494,7 @@ const Connector* Diagram::getYesOutputConnector(const DiagramElement* element) c
 
 const Connector* Diagram::getBodyOutputConnector(const DiagramElement* element) const
 {
-    QPoint outputPoint(element->column * getGridWidth(), element->row * getGridHeight() + getGridHeight() / 2);
+    QPoint outputPoint(element->column * getGridWidth() + getGridWidth() / 2, element->row * getGridHeight() + getGridHeight());
     for (const auto& connector : m_connectors)
     {
         if (connector.front().m_point == outputPoint)
@@ -483,5 +504,6 @@ const Connector* Diagram::getBodyOutputConnector(const DiagramElement* element) 
     }
     return nullptr;
 }
+
 
 

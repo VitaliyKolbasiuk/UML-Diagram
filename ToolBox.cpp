@@ -44,7 +44,7 @@ void ToolBox::paintEvent(QPaintEvent* event)
 
 void ToolBox::mousePressEvent(QMouseEvent *event)
 {
-    qDebug() << "ToolBox mouse pressed";
+    //qDebug() << "ToolBox mouse pressed";
     m_dragObject->setVisible(true);
 
     int index = event->pos().y() / ELEMENT_HEIGHT;
@@ -67,7 +67,7 @@ void ToolBox::mouseMoveEvent(QMouseEvent *event)
 
 void ToolBox::mouseReleaseEvent(QMouseEvent *event)
 {
-    qDebug() << "ToolBox mouse release";
+    //qDebug() << "ToolBox mouse release";
     m_dragObject->setVisible(false);
 
     m_diagram->currentItemReleased();

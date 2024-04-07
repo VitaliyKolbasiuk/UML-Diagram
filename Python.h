@@ -47,24 +47,28 @@ namespace python_code {
 
     struct If : public Element
     {
-        If (std::string condition, ElementList yes, ElementList no) : m_condition(condition), m_yesList(yes), m_noList(no) {}
         std::string m_condition;
         ElementList m_yesList;
         ElementList m_noList;
 
+        If (std::string condition, ElementList yes, ElementList no) : m_condition(condition), m_yesList(yes), m_noList(no) {}
+
         virtual void generate( std::ostream& output, int indent ) const override
         {
-            output << "IF" << std::endl;
-            output << "YES BODY" << std::endl;
             for (int i = 0; i < indent; ++i)
             {
                 output << ' ';
             }
+            output << "if (CONDITION)" << std::endl;
             for (const auto& element : m_yesList)
             {
                 element->generate(output, indent + 4);
             }
-            output << std::endl << "NO BODY" << std::endl;
+            for (int i = 0; i < indent; ++i)
+            {
+                output << ' ';
+            }
+            output << "else" << std::endl;
             for (const auto& element : m_noList)
             {
                 element->generate(output, indent + 4);
@@ -77,8 +81,19 @@ namespace python_code {
         std::string m_condition;
         ElementList m_body;
 
+        For (std::string condition, ElementList body) : m_condition(condition), m_body(body){}
+
         virtual void generate( std::ostream& output, int indent ) const override
         {
+            for (int i = 0; i < indent; ++i)
+            {
+                output << ' ';
+            }
+            output << "for " << m_condition << std::endl;
+            for (const auto& element : m_body)
+            {
+                element->generate(output, indent + 4);
+            }
         }
     };
 

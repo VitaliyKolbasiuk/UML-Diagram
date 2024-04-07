@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>885</width>
-    <height>637</height>
+    <width>1251</width>
+    <height>729</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -42,7 +42,7 @@
              <x>0</x>
              <y>0</y>
              <width>198</width>
-             <height>536</height>
+             <height>628</height>
             </rect>
            </property>
           </widget>
@@ -58,12 +58,15 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>655</width>
-             <height>536</height>
+             <width>507</width>
+             <height>628</height>
             </rect>
            </property>
           </widget>
          </widget>
+        </item>
+        <item>
+         <widget class="QTextEdit" name="m_textEdit"/>
         </item>
        </layout>
       </item>
@@ -87,7 +90,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>885</width>
+     <width>1251</width>
      <height>22</height>
     </rect>
    </property>

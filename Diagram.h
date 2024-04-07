@@ -56,6 +56,8 @@ struct ConnectionPoint
 
 class Diagram : public QWidget
 {
+    Q_OBJECT
+
     std::vector<DiagramElement> m_diagramElements;
     std::vector<Connector>      m_connectors;
     Graph                       m_graph;
@@ -66,6 +68,9 @@ class Diagram : public QWidget
 
     Connector                   m_currentArrow;
     QPoint                      m_newArrowPoint;
+
+signals:
+    void codeGenerated(const QString& code);
 
 public:
     Diagram();
@@ -88,6 +93,7 @@ private:
     bool isWithinDiagramArea(const QPoint point) const;
     void deleteDragElement();
     std::vector<ConnectionPoint> createCircles() const;
+    std::vector<ConnectionPoint> createInputCircles() const;
     void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
     ConnectionPoint onCircleCollision(const QPoint mousePos);
     void drawInputElement(QPainter* painter);
