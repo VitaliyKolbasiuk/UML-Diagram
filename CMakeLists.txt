@@ -40,6 +40,8 @@ set(PROJECT_SOURCES
 )
 
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(SYSTEM cereal/include)
+
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(Sunrise

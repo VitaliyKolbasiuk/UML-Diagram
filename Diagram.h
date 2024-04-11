@@ -11,6 +11,7 @@
 class Diagram : public QWidget
 {
     Q_OBJECT
+    friend class MainWindow;
 
     std::vector<DiagramElement> m_diagramElements;
     std::vector<Connector>      m_connectors;

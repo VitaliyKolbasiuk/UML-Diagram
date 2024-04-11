@@ -21,7 +21,7 @@ public:
     void setDragObjectRef(DragObject& dragObject);
     void setDiagramRef(QWidget& diagram);
 
-    const Diagram* getDiagram()
+    Diagram* getDiagram()
     {
         return m_diagram;
     }

@@ -237,7 +237,7 @@ void Diagram::mouseDoubleClickEvent(QMouseEvent *event)
             ElementText elementText(this);
             if (elementText.exec() == QDialog::Accepted)
             {
-                 element.m_text = elementText.getText();
+                element.m_text = elementText.getText().toStdString();
             }
             return;
         }

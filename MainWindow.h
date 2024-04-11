@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QMainWindow>
+#include <filesystem>
+#include <cereal/archives/binary.hpp>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -15,6 +17,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
     Ui::MainWindow* ui;
     DragObject*     m_dragObejct;
+    std::filesystem::path m_path;
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -25,5 +28,8 @@ public slots:
 
 private:
     void initToolBox();
-    void generate();
+    void saveDiagram();
+    void loadDiagram();
+    void saveConnectors(cereal::BinaryOutputArchive& archive);
+    void loadConnectors(cereal::BinaryInputArchive& archive);
 };
