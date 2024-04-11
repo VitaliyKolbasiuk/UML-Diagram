@@ -32,6 +32,11 @@ set(PROJECT_SOURCES
         ElementText.cpp
         ElementText.h
         ElementText.ui
+        ConnectionPoint.cpp
+        ConnectionPoint.h
+        DiagramElement.cpp
+        DiagramElement.h
+        Utils.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR})

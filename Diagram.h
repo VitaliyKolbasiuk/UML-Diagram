@@ -1,50 +1,12 @@
 #pragma once
 
 #include "ToolBoxModel.h"
+#include "Utils.h"
+#include "ConnectionPoint.h"
+#include "DiagramElement.h"
 
 #include <QWidget>
 #include <map>
-
-struct ConnectionPoint;
-using Connector = std::vector<ConnectionPoint>;
-
-inline int getDiagramWidth()
-{
-    return 500;
-}
-
-inline int getDiagramHeight()
-{
-    return 600;
-}
-
-inline int getGridWidth()
-{
-    return 100;
-}
-
-inline int getGridHeight()
-{
-    return 50;
-}
-
-struct DiagramElement
-{
-    ToolBoxModel::Element::Type m_type;
-    int m_column;
-    int m_row;
-    QString m_text;
-
-    bool onInputCircleCollision(const QPoint& mousePos, Connector& connector) const;
-    bool onElementCollision(const QPoint& mousePos) const;
-};
-
-struct ConnectionPoint
-{
-    QPoint m_point;
-    DiagramElement* m_element = nullptr;
-    enum {input, yes, no, for_body, output} m_type = output;
-};
 
 class Diagram : public QWidget
 {
@@ -83,13 +45,9 @@ private:
     void drawCurrentElement(QPainter* painter);
     bool isWithinDiagramArea(const QPoint point) const;
     void deleteDragElement();
-    Connector createCircles() const;
     Connector createInputCircles() const;
     void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
-    ConnectionPoint onCircleCollision(const QPoint mousePos);
     void drawInputElement(QPainter* painter);
-    bool onInputCircleCollision(const QPoint mousePos, Connector& connector);
-
 
 public:
     std::vector<const Connector*> getInputConnector(const DiagramElement* element) const;

@@ -8,8 +8,6 @@
 #include <sstream>
 #include <string>
 
-#define CIRCLE_RADIUS getGridWidth() / 20
-
 Diagram::Diagram()
 {
     setMinimumSize(getDiagramWidth() + 10, getDiagramHeight() + 10);
@@ -127,17 +125,23 @@ void Diagram::drawCurrentElement(QPainter* painter)
 
     drawGridElement(*m_currentElement);
 
-    drawCurrElementCircles(painter, createCircles());
+    drawCurrElementCircles(painter, m_currentElement->createCircles());
 }
 
 void Diagram::mousePressEvent(QMouseEvent* event)
 {
-    if (ConnectionPoint connectionPoint = onCircleCollision(event->pos()); !connectionPoint.m_point.isNull())
+    ConnectionPoint connectionPoint;
+    if (m_currentElement != nullptr)
+    {
+        connectionPoint = m_currentElement->onCircleCollision(event->pos());
+    }
+
+    if (!connectionPoint.m_point.isNull())
     {
         m_currentArrow.emplace_back(connectionPoint);
         m_newArrowPoint = connectionPoint.m_point;
     }
-    else if (onInputCircleCollision(event->pos(), m_currentArrow))
+    else if (m_inputElement != nullptr && m_inputElement->onInputCircleCollision(event->pos(), m_currentArrow))
     {
         m_currentArrow.back().m_element = m_inputElement;
         m_currentArrow.back().m_type = ConnectionPoint::input;
@@ -183,29 +187,15 @@ DiagramElement* Diagram::onElementClicked(QPoint mousePos)
     return nullptr;
 }
 
-ConnectionPoint Diagram::onCircleCollision(const QPoint mousePos)
-{
-    if (m_currentElement)
-    {
-        std::vector<ConnectionPoint> points = createCircles();
-
-        for (const auto &point: points)
-        {
-            // CIRCLE COLLISION
-            if ((mousePos.x() - point.m_point.x()) * (mousePos.x() - point.m_point.x()) +
-                (mousePos.y() - point.m_point.y()) * (mousePos.y() - point.m_point.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
-            {
-                return point;
-            }
-        }
-    }
-    return ConnectionPoint();
-}
-
 void Diagram::mouseMoveEvent(QMouseEvent* event)
 {
     DiagramElement* elementPtr = onElementClicked(event->pos());
-    ConnectionPoint connectionPoint = onCircleCollision(event->pos());
+
+    ConnectionPoint connectionPoint;
+    if (m_currentElement != nullptr)
+    {
+        connectionPoint = m_currentElement->onCircleCollision(event->pos());
+    }
 
     if(!m_currentArrow.empty())
     {
@@ -313,33 +303,6 @@ void Diagram::deleteDragElement()
     m_dragElement = nullptr;
 }
 
-Connector Diagram::createCircles() const
-{
-    int leftPointX  = m_currentElement->m_column * getGridWidth();
-    int midPointX  = m_currentElement->m_column * getGridWidth() + getGridWidth() / 2;
-    int rightPointX = m_currentElement->m_column * getGridWidth() + getGridWidth();
-
-    int midPointY  = m_currentElement->m_row * getGridHeight() + getGridHeight() / 2 ;
-    int downPointY = m_currentElement->m_row * getGridHeight() + getGridHeight();
-    switch (m_currentElement->m_type)
-    {
-        case ToolBoxModel::Element::Function:
-            return {{QPoint(midPointX, downPointY), m_currentElement, ConnectionPoint::output}};
-        case ToolBoxModel::Element::Block:
-            return {{QPoint(midPointX, downPointY), m_currentElement, ConnectionPoint::output}};
-
-        case ToolBoxModel::Element::If:
-            return {{QPoint(leftPointX, midPointY), m_currentElement, ConnectionPoint::no},
-                    {QPoint(midPointX, downPointY),  m_currentElement, ConnectionPoint::yes},
-                    {QPoint(rightPointX, midPointY),  m_currentElement, ConnectionPoint::no}};
-
-        case ToolBoxModel::Element::For:
-            return {{QPoint(midPointX, downPointY), m_currentElement, ConnectionPoint::for_body},
-                    {QPoint(rightPointX, midPointY),  m_currentElement, ConnectionPoint::output}};
-    }
-    return {};
-}
-
 void Diagram::drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points)
 {
     for (const auto& point : points)
@@ -379,97 +342,6 @@ Connector Diagram::createInputCircles() const
                     {QPoint(midPointX, topPointY), m_inputElement, ConnectionPoint::input}};
     }
     return {};
-}
-
-bool Diagram::onInputCircleCollision(const QPoint mousePos, Connector& currentArrow)
-{
-    if (m_inputElement)
-    {
-        m_inputElement->onInputCircleCollision(mousePos, currentArrow);
-        return true;
-    }
-    return false;
-}
-
-bool DiagramElement::onInputCircleCollision(const QPoint& mousePos, Connector& currentArrow) const
-{
-    switch(m_type)
-    {
-        case ToolBoxModel::Element::Function:
-            break;
-        case ToolBoxModel::Element::Block:
-        case ToolBoxModel::Element::If:
-        {
-            int x = m_column * getGridWidth() + getGridWidth() / 2;
-            int y = m_row * getGridHeight();
-            if( (x - mousePos.x()) * (x - mousePos.x()) +
-                    (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
-            {
-                currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
-                return true;
-            }
-            break;
-        }
-        case ToolBoxModel::Element::For:
-            int x = m_column * getGridWidth() + getGridWidth() / 2;
-            int y = m_row * getGridHeight();
-            if( (x - mousePos.x()) * (x - mousePos.x()) +
-                    (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
-            {
-                currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
-                return true;
-            }
-
-            x = m_column * getGridWidth();
-            y = m_row * getGridHeight() + getGridHeight() / 2;
-            if( (x - mousePos.x()) * (x - mousePos.x()) +
-                    (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
-            {
-                currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
-                return true;
-            }
-            break;
-    }
-    return false;
-}
-
-bool DiagramElement::onElementCollision(const QPoint &mousePos) const
-{
-    int x = m_column * getGridWidth();
-    int y = m_row * getGridHeight();
-
-    QPainterPath path;
-    switch(m_type)
-    {
-        case ToolBoxModel::Element::Function:
-        {
-            path.addRoundedRect(QRect(x, y, getGridWidth(), getGridHeight()), getGridWidth() / 4, getGridHeight() / 2);
-            break;
-        }
-        case ToolBoxModel::Element::Block:
-        {
-            return QRect(x, y, getGridWidth(), getGridHeight()).contains(mousePos);
-        }
-        case ToolBoxModel::Element::If:
-        {
-            path.moveTo(x + getGridWidth() / 2, y);
-            path.lineTo(x + getGridWidth(), y + getGridHeight() / 2);
-            path.lineTo(x + getGridWidth() / 2, y + getGridHeight());
-            path.lineTo(x, y + getGridHeight() / 2);
-            break;
-        }
-        case ToolBoxModel::Element::For:
-        {
-            path.moveTo(x, y + getGridHeight() / 2);
-            path.lineTo(x + getGridWidth()  / 4, y);
-            path.lineTo(x + getGridWidth()  / 1.33, y);
-            path.lineTo(x + getGridWidth() , y + getGridHeight() / 2);
-            path.lineTo(x + getGridWidth()  / 1.33, y + getGridHeight());
-            path.lineTo(x + getGridWidth()  / 4, y + getGridHeight());
-            break;
-        }
-    }
-    return path.contains(mousePos);
 }
 
 const DiagramElement* Diagram::findFirstElement() const
