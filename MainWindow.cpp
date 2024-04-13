@@ -16,7 +16,6 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setStyleSheet("background-color: black;");
     ui->m_textEdit->setMaximumWidth(ui->m_scrollDiagram->widget()->size().width() - 20);
     m_dragObejct = new DragObject(this);
     ui->m_toolBox->setDragObjectRef(*m_dragObejct);

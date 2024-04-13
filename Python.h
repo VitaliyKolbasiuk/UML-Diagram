@@ -62,7 +62,7 @@ namespace python_code {
             {
                 output << ' ';
             }
-            output << "if (CONDITION)" << std::endl;
+            output << "if " << m_condition << std::endl;
             for (const auto& element : m_yesList)
             {
                 element->generate(output, indent + 4);
@@ -102,8 +102,13 @@ namespace python_code {
 
     struct Block : public Element
     {
-        Block() {}
         std::vector<std::string> m_body;
+
+        Block() {}
+        Block(const std::string& body)
+        {
+            m_body.emplace_back(body);
+        }
 
         virtual void generate( std::ostream& output, int indent ) const override
         {

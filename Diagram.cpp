@@ -283,7 +283,7 @@ void Diagram::currentItemReleased()
     deleteDragElement();
 }
 
-bool Diagram::isWithinDiagramArea(const QPoint point) const
+bool Diagram::isWithinDiagramArea(const QPoint point)
 {
     return point.x() >= 0 && point.x() < getDiagramWidth() &&
            point.y() >= 0 && point.y() < getDiagramHeight();

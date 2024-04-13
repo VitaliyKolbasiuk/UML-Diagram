@@ -41,14 +41,14 @@ public:
     void updateDiagram();
 
 private:
-    void drawGridElement(const DiagramElement& element);
-    void drawGrid(QPainter* painter);
+    static void drawGridElement(const DiagramElement& element);
+    static void drawGrid(QPainter* painter);
     DiagramElement* onElementClicked(QPoint mousePos);
     void drawCurrentElement(QPainter* painter);
-    bool isWithinDiagramArea(const QPoint point) const;
+    static bool isWithinDiagramArea(const QPoint point) ;
     void deleteDragElement();
     Connector createInputCircles() const;
-    void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
+    static void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
     void drawInputElement(QPainter* painter);
     void generateCode();
 
