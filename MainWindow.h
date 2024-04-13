@@ -17,7 +17,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
     Ui::MainWindow* ui;
     DragObject*     m_dragObejct;
-    std::filesystem::path m_path;
+    std::string m_fileName = "settings.bin";
 
 public:
     MainWindow(QWidget *parent = nullptr);

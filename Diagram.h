@@ -38,6 +38,7 @@ public:
     void setCurrentElement(ToolBoxModel::Element::Type type);
     void currentItemReleased();
     const DiagramElement* findFirstElement() const;
+    void updateDiagram();
 
 private:
     void drawGridElement(const DiagramElement& element);
@@ -49,9 +50,9 @@ private:
     Connector createInputCircles() const;
     void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
     void drawInputElement(QPainter* painter);
+    void generateCode();
 
 public:
-    std::vector<const Connector*> getInputConnector(const DiagramElement* element) const;
     const Connector* getOutputConnector(const DiagramElement* element) const;
     const Connector* getYesOutputConnector(const DiagramElement* element) const;
     const Connector* getNoOutputConnector(const DiagramElement* element) const;

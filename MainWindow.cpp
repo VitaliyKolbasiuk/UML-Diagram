@@ -45,7 +45,7 @@ void MainWindow::outputCode(const QString& code)
 
 void MainWindow::saveDiagram()
 {
-    std::ofstream os(m_path, std::ios::binary);
+    std::ofstream os(m_fileName, std::ios::binary);
     cereal::BinaryOutputArchive archive( os );
     Diagram* diagram = ui->m_toolBox->getDiagram();
     archive(diagram->m_diagramElements);
@@ -54,11 +54,12 @@ void MainWindow::saveDiagram()
 
 void MainWindow::loadDiagram()
 {
-    std::ifstream ios(m_path, std::ios::binary);
+    std::ifstream ios(m_fileName, std::ios::binary);
     cereal::BinaryInputArchive archive( ios );
     Diagram* diagram = ui->m_toolBox->getDiagram();
     archive(diagram->m_diagramElements);
     loadConnectors(archive);
+    diagram->updateDiagram();
 }
 
 void MainWindow::saveConnectors(cereal::BinaryOutputArchive& archive)
@@ -69,11 +70,12 @@ void MainWindow::saveConnectors(cereal::BinaryOutputArchive& archive)
     for (const auto& connector : diagram->m_connectors)
     {
         size = connector.size();
+        archive(size);
         for (const auto& point : connector)
         {
             archive (point.m_point.x());
             archive (point.m_point.y());
-            archive ((int)point.m_type);
+            archive (static_cast<int>(point.m_type));
             int index = -1;
             for (int i = 0; i < diagram->m_diagramElements.size(); ++i)
             {
@@ -91,9 +93,9 @@ void MainWindow::saveConnectors(cereal::BinaryOutputArchive& archive)
 void MainWindow::loadConnectors(cereal::BinaryInputArchive& archive)
 {
     Diagram* diagram = ui->m_toolBox->getDiagram();
-    size_t size = diagram->m_connectors.size();
-    archive( size );
 
+    size_t size;
+    archive( size );
     for (int i = 0; i < size; ++i)
     {
         size_t connectorSize;

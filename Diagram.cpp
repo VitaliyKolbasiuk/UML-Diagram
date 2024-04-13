@@ -152,15 +152,7 @@ void Diagram::mousePressEvent(QMouseEvent* event)
         m_currentElement = nullptr;
         m_newArrowPoint = QPoint();
 
-        python_code::Code pythonCode = python_code::diagramToPythonPseudoCode(*this);
-        std::ostringstream oss;
-        for(const auto& element : pythonCode)
-        {
-            element->generate(oss, 0);
-        }
-        emit codeGenerated(QString::fromStdString(oss.str()));
-        // qDebug() << "--------------";
-        // qDebug() << oss.str();
+        generateCode();
 
         update();
     }
@@ -364,17 +356,26 @@ const DiagramElement* Diagram::findFirstElement() const
     return highestElement;
 }
 
-std::vector<const Connector*> Diagram::getInputConnector(const DiagramElement* element) const
+void Diagram::updateDiagram()
 {
-    std::vector<const Connector*> connectors;
-    for (const auto& connector : m_connectors)
+    m_currentArrow.clear();
+    m_newArrowPoint = QPoint();
+    m_currentElement = nullptr;
+    m_inputElement = nullptr;
+
+    generateCode();
+    update();
+}
+
+void Diagram::generateCode()
+{
+    python_code::Code pythonCode = python_code::diagramToPythonPseudoCode(*this);
+    std::ostringstream oss;
+    for(const auto& element : pythonCode)
     {
-        if (connector.front().m_element == element)
-        {
-            connectors.emplace_back(&connector);
-        }
+        element->generate(oss, 0);
     }
-    return connectors;
+    emit codeGenerated(QString::fromStdString(oss.str()));
 }
 
 const Connector* Diagram::getOutputConnector(const DiagramElement* element) const
