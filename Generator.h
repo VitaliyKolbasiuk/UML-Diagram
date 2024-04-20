@@ -1,16 +1,35 @@
-    #pragma once
+#pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <memory>
 
 struct DiagramElement;
 class Diagram;
-namespace python_code {
+namespace generate_code {
+
+    enum Language
+    {
+        python,
+        cpp
+    };
+
+    inline Language gCurrentLanguage = cpp;
 
     struct Element
     {
-        virtual void generate( std::ostream&, int indent ) const = 0;
+        virtual void generatePython( std::ostream&, int indent ) const = 0;
+        virtual void generateCpp( std::ostream&, int indent ) const = 0;
+
+        void printText( std::ostream& output, const std::string& text, int indent) const
+        {
+            for(int i = 0; i < indent; ++i)
+            {
+                output << ' ';
+            }
+            output << text << std::endl;
+        }
     };
 
     using ElementList = std::vector<std::shared_ptr<Element>>;
@@ -22,7 +41,7 @@ namespace python_code {
         std::vector<std::string> m_argList;
         ElementList              m_body;
 
-        virtual void generate( std::ostream& output, int indent ) const override
+        virtual void generatePython( std::ostream& output, int indent ) const override
         {
             output << m_name << "(";
             for( const auto& arg: m_argList )
@@ -38,10 +57,15 @@ namespace python_code {
             // Body
             for( const auto& body: m_body )
             {
-                body->generate( output, indent+1 );
+                body->generatePython( output, indent+1 );
             }
 
             output << std::endl;
+        }
+
+        virtual void generateCpp( std::ostream& output, int indent ) const override
+        {
+
         }
     };
 
@@ -56,26 +80,46 @@ namespace python_code {
                                                                                            m_noList(no)
         {}
 
-        virtual void generate( std::ostream& output, int indent ) const override
+        virtual void generatePython( std::ostream& output, int indent ) const override
         {
             for (int i = 0; i < indent; ++i)
             {
                 output << ' ';
             }
+
             output << "if " << m_condition << std::endl;
             for (const auto& element : m_yesList)
             {
-                element->generate(output, indent + 4);
+                element->generatePython(output, indent + 4);
             }
             for (int i = 0; i < indent; ++i)
             {
                 output << ' ';
             }
+
             output << "else" << std::endl;
             for (const auto& element : m_noList)
             {
-                element->generate(output, indent + 4);
+                element->generatePython(output, indent + 4);
             }
+        }
+
+        virtual void generateCpp( std::ostream& output, int indent ) const override
+        {
+            printText(output, "if( " + m_condition + " )", indent);
+            printText(output, "{", indent);
+            for (const auto& element : m_yesList)
+            {
+                element->generateCpp(output, indent + 4);
+            }
+            printText(output, "}", indent);
+            printText(output, "else", indent);
+            printText(output, "{", indent);
+            for (const auto& element : m_noList)
+            {
+                element->generateCpp(output, indent + 4);
+            }
+            printText(output, "}", indent);
         }
     };
 
@@ -86,7 +130,7 @@ namespace python_code {
 
         For (const std::string& condition, const ElementList& body) : m_condition(condition), m_body(body){}
 
-        virtual void generate( std::ostream& output, int indent ) const override
+        virtual void generatePython( std::ostream& output, int indent ) const override
         {
             for (int i = 0; i < indent; ++i)
             {
@@ -95,8 +139,23 @@ namespace python_code {
             output << "for " << m_condition << std::endl;
             for (const auto& element : m_body)
             {
-                element->generate(output, indent + 4);
+                element->generatePython(output, indent + 4);
             }
+        }
+
+        virtual void generateCpp( std::ostream& output, int indent ) const override
+        {
+            for (int i = 0; i < indent; ++i)
+            {
+                output << ' ';
+            }
+            output << "for( " << m_condition << " )" << std::endl;
+            output << '{' << std::endl;
+            for (const auto& element : m_body)
+            {
+                element->generateCpp(output, indent + 4);
+            }
+            output << '}' << std::endl;
         }
     };
 
@@ -110,7 +169,7 @@ namespace python_code {
             m_body.emplace_back(body);
         }
 
-        virtual void generate( std::ostream& output, int indent ) const override
+        virtual void generatePython( std::ostream& output, int indent ) const override
         {
             for(int i = 0; i < indent; ++i)
             {
@@ -120,6 +179,15 @@ namespace python_code {
             for(const auto& line : m_body)
             {
                 output << line << std::endl;
+            }
+        }
+
+        virtual void generateCpp( std::ostream& output, int indent ) const override
+        {
+            printText(output, "BLOCK", indent);
+            for(const auto& line : m_body)
+            {
+                printText(output, line, indent);
             }
         }
     };

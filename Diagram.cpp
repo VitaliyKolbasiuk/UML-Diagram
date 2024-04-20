@@ -1,7 +1,7 @@
 #include "Diagram.h"
 #include "DrawElements.h"
 #include "ToolBoxModel.h"
-#include "Python.h"
+#include "Generator.h"
 #include "ElementText.h"
 
 #include <QMouseEvent>
@@ -52,7 +52,6 @@ void Diagram::paintEvent(QPaintEvent *event)
         {
             path.lineTo(m_currentArrow[i].m_point);
         }
-        path.lineTo(m_newArrowPoint);
         painter.drawPath(path);
         update();
     }
@@ -200,7 +199,103 @@ void Diagram::mouseMoveEvent(QMouseEvent* event)
         {
             m_inputElement = nullptr;
         }
+
         m_newArrowPoint = event->pos();
+        m_currentArrow.erase(m_currentArrow.begin() + 1, m_currentArrow.end());
+
+        QPoint outputPoint = m_currentArrow.front().m_point;
+        Connector connectors;
+        int yDiff = event->pos().y() - outputPoint.y();
+        // Input circle is left or right (IF or FOR)
+        if (m_currentArrow.front().m_point.y() != m_currentArrow.front().m_element->m_row * getGridHeight() + getGridHeight())
+        {
+            bool isLeft = m_currentArrow.front().m_point.x() == m_currentArrow.front().m_element->m_column * getGridWidth();
+            if(yDiff < 0 && event->pos().x() / getGridWidth() == m_currentArrow.front().m_element->m_column)
+            {
+                int x = outputPoint.x();
+                if (isLeft)
+                {
+                    x -= getGridWidth() / 2;
+                }
+                else
+                {
+                    x += getGridWidth() / 2;
+                }
+                connectors.emplace_back(ConnectionPoint{QPoint(x, centerRow(outputPoint.y()))});
+                connectors.emplace_back(ConnectionPoint{QPoint(x, centerRow(event->pos().y()))});
+                connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y()))});
+            }
+            else if (isLeft && event->pos().x() > outputPoint.x())
+            {
+                connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x() - getGridWidth() / 2, outputPoint.y())});
+                if (event->pos().y() / getGridHeight() == m_currentArrow.front().m_element->m_row)
+                {
+                    connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x() - getGridWidth() / 2, centerRow(event->pos().y() - getGridHeight()))});
+                    connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y() - getGridHeight()))});
+                    connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y()))});
+                }
+                else
+                {
+                    connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x() - getGridWidth() / 2, centerRow(event->pos().y()))});
+                    connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y()))});
+                }
+            }
+            else if (!isLeft && event->pos().x() < outputPoint.x())
+            {
+                connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x() + getGridWidth() / 2, outputPoint.y())});
+                if (event->pos().y() / getGridHeight() == m_currentArrow.front().m_element->m_row)
+                {
+                    connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x() + getGridWidth() / 2, centerRow(event->pos().y() - getGridHeight()))});
+                    connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y() - getGridHeight()))});
+                    connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y()))});
+                }
+                else
+                {
+                    connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x() + getGridWidth() / 2, centerRow(event->pos().y()))});
+                    connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y()))});
+                }
+            }
+            else
+            {
+                connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), m_currentArrow.front().m_point.y())});
+                connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y()))});
+            }
+        }
+        else if (yDiff < 0) // Cursor is above current element
+        {
+            connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x(), outputPoint.y() + getGridHeight() / 2), nullptr});
+            // Cursor row equals to element's row
+            if (event->pos().x() / getGridWidth() == m_currentArrow.front().m_element->m_column)
+            {
+                int x = outputPoint.x();
+                if ((event->pos().x() - getGridWidth() / 2) / getGridWidth() != m_currentArrow.front().m_element->m_column)
+                {
+                    x -= getGridWidth();
+                }
+                else
+                {
+                    x += getGridWidth();
+                }
+                connectors.emplace_back(ConnectionPoint{QPoint(x, outputPoint.y() + getGridHeight() / 2), nullptr});
+                connectors.emplace_back(ConnectionPoint{QPoint(x, centerRow(event->pos().y())), nullptr});
+            }
+            else
+            {
+                connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(outputPoint.y())), nullptr});
+            }
+            connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(event->pos().y())), nullptr});
+        }
+        else
+        {
+            int yMid = yDiff >= 0 ? yDiff / 2 + outputPoint.y(): outputPoint.y();
+            connectors.emplace_back(ConnectionPoint{QPoint(outputPoint.x(), centerRow(yMid)), nullptr});
+            connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(event->pos().x()), centerRow(yMid)), nullptr});
+            connectors.emplace_back(ConnectionPoint{QPoint(centerColumn(m_newArrowPoint.x()), centerRow(m_newArrowPoint.y())), nullptr});
+        }
+        for (const auto& connector : connectors)
+        {
+            m_currentArrow.emplace_back(connector);
+        }
     }
 
     if (!elementPtr && connectionPoint.m_point.isNull() && !m_inputElement)
@@ -213,6 +308,16 @@ void Diagram::mouseMoveEvent(QMouseEvent* event)
         m_currentElement = elementPtr;
         update();
     }
+}
+
+int Diagram::centerColumn(int x)
+{
+    return x / getGridWidth() * getGridWidth() + getGridWidth() / 2;
+}
+
+int Diagram::centerRow(int y)
+{
+    return y / getGridHeight() * getGridHeight() + getGridHeight() / 2;
 }
 
 void Diagram::mouseReleaseEvent(QMouseEvent* event)
@@ -369,11 +474,11 @@ void Diagram::updateDiagram()
 
 void Diagram::generateCode()
 {
-    python_code::Code pythonCode = python_code::diagramToPythonPseudoCode(*this);
+    generate_code::Code pythonCode = generate_code::diagramToPythonPseudoCode(*this);
     std::ostringstream oss;
     for(const auto& element : pythonCode)
     {
-        element->generate(oss, 0);
+        element->generateCpp(oss, 0);
     }
     emit codeGenerated(QString::fromStdString(oss.str()));
 }

@@ -17,6 +17,7 @@ bool DiagramElement::onInputCircleCollision(const QPoint& mousePos, Connector& c
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                 (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
+                currentArrow.pop_back();
                 currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
                 return true;
             }
@@ -28,6 +29,7 @@ bool DiagramElement::onInputCircleCollision(const QPoint& mousePos, Connector& c
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                 (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
+                currentArrow.pop_back();
                 currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
                 return true;
             }
@@ -37,6 +39,7 @@ bool DiagramElement::onInputCircleCollision(const QPoint& mousePos, Connector& c
             if( (x - mousePos.x()) * (x - mousePos.x()) +
                 (y - mousePos.y()) * (y - mousePos.y()) <= CIRCLE_RADIUS * CIRCLE_RADIUS)
             {
+                currentArrow.pop_back();
                 currentArrow.emplace_back(ConnectionPoint{QPoint(x, y), nullptr, ConnectionPoint::no});
                 return true;
             }

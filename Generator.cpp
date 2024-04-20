@@ -1,11 +1,11 @@
-#include "Python.h"
+#include "Generator.h"
 #include "Diagram.h"
 
 static const DiagramElement* findEndOfIf(const Diagram& diagram, const DiagramElement* element);
 static const DiagramElement* findNextElement(const Diagram& diagram, const DiagramElement* element);
 static const DiagramElement* findEndOfForBody(const Diagram& diagram, const DiagramElement* element);
 
-std::shared_ptr<python_code::Element> python_code::elementToPseudoCode(const Diagram& diagram, const DiagramElement* diagramElement)
+std::shared_ptr<generate_code::Element> generate_code::elementToPseudoCode(const Diagram& diagram, const DiagramElement* diagramElement)
 {
     switch(diagramElement->m_type)
     {
@@ -53,7 +53,7 @@ std::shared_ptr<python_code::Element> python_code::elementToPseudoCode(const Dia
                     bodyElement = findNextElement(diagram, bodyElement);
                 }
             }
-            return std::make_shared<For>("", body);
+            return std::make_shared<For>(diagramElement->m_text, body);
         }
     }
     return {};
@@ -174,7 +174,7 @@ const DiagramElement* findNextElement(const Diagram& diagram, const DiagramEleme
 
 
 
-python_code::Code python_code::diagramToPythonPseudoCode(const Diagram& diagram)
+generate_code::Code generate_code::diagramToPythonPseudoCode(const Diagram& diagram)
 {
     Code pythonCode;
 

@@ -51,6 +51,8 @@ private:
     static void drawCurrElementCircles(QPainter* painter, const std::vector<ConnectionPoint>& points);
     void drawInputElement(QPainter* painter);
     void generateCode();
+    int centerColumn(int x);
+    int centerRow(int y);
 
 public:
     const Connector* getOutputConnector(const DiagramElement* element) const;

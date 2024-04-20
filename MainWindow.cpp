@@ -6,7 +6,7 @@
 #include "./ui_MainWindow.h"
 #include "ToolBoxModel.h"
 #include "DragObject.h"
-#include "Python.h"
+#include "Generator.h"
 
 
 #include <QPushButton>

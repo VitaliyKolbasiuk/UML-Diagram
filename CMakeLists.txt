@@ -28,7 +28,7 @@ set(PROJECT_SOURCES
         DrawElements.h
         DragObject.cpp
         DragObject.h
-        Python.h
+        Generator.h
         ElementText.cpp
         ElementText.h
         ElementText.ui
@@ -47,7 +47,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(Sunrise
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        Python.cpp
+        Generator.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Sunrise APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
