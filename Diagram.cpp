@@ -13,6 +13,7 @@ Diagram::Diagram()
     setMinimumSize(getDiagramWidth() + 10, getDiagramHeight() + 10);
 
     setMouseTracking(true);
+    QWidget::setFocusPolicy(Qt::StrongFocus);
 
 }
 
@@ -59,6 +60,11 @@ void Diagram::paintEvent(QPaintEvent *event)
     for (const auto& arrow : m_connectors)
     {
         assert(!arrow.empty());
+
+        if (&arrow == m_currentConnector)
+        {
+            drawSelectedConnector(&painter);
+        }
 
         QPainterPath path;
 
@@ -125,6 +131,22 @@ void Diagram::drawCurrentElement(QPainter* painter)
     drawGridElement(*m_currentElement);
 
     drawCurrElementCircles(painter, m_currentElement->createCircles());
+}
+
+void Diagram::drawSelectedConnector(QPainter *painter)
+{
+    QBrush brush(Qt::darkGray);
+    painter->setBrush(brush);
+    QPen pen(Qt::white);
+    painter->setPen(pen);
+    QPainterPath path;
+
+    for (int i = 1; i < m_currentConnector->size(); ++i)
+    {
+        path.moveTo((*m_currentConnector)[i - 1].m_point);
+        path.lineTo((*m_currentConnector)[i].m_point);
+    }
+    painter->drawPath(path);
 }
 
 void Diagram::mousePressEvent(QMouseEvent* event)
@@ -322,7 +344,40 @@ int Diagram::centerRow(int y)
 
 void Diagram::mouseReleaseEvent(QMouseEvent* event)
 {
-    //qDebug() << "Diagram mouse release";
+    m_currentConnector = onConnectorCollision(event->pos());
+    update();
+}
+
+Connector* Diagram::onConnectorCollision(const QPoint mousePos)
+{
+    for (auto& connector : m_connectors)
+    {
+        for (int i = 0; i < connector.size() - 1; ++i)
+        {
+            if (connector[i].m_point.x() - connector[i + 1].m_point.x() == 0)
+            {
+                int yMin = std::min(connector[i].m_point.y(), connector[i + 1].m_point.y());
+                int yMax = std::max(connector[i].m_point.y(), connector[i + 1].m_point.y());
+                //qDebug() << std::abs(mousePos.x() - connector[i].m_point.x());
+                if (std::abs(mousePos.x() - connector[i].m_point.x()) < 5 &&
+                    mousePos.y() >= yMin && mousePos.y() <= yMax)
+                {
+                    return &connector;
+                }
+            }
+            else if (connector[i].m_point.y() - connector[i + 1].m_point.y() == 0)
+            {
+                int xMin = std::min(connector[i].m_point.x(), connector[i + 1].m_point.x());
+                int xMax = std::max(connector[i].m_point.x(), connector[i + 1].m_point.x());
+                if (std::abs(mousePos.y() - connector[i].m_point.y()) < 5 &&
+                    mousePos.x() >= xMin && mousePos.x() <= xMax)
+                {
+                    return &connector;
+                }
+            }
+        }
+    }
+    return nullptr;
 }
 
 void Diagram::mouseDoubleClickEvent(QMouseEvent *event)
@@ -336,6 +391,32 @@ void Diagram::mouseDoubleClickEvent(QMouseEvent *event)
             {
                 element.m_text = elementText.getText().toStdString();
             }
+            return;
+        }
+    }
+}
+
+void Diagram::keyReleaseEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Delete)
+    {
+        if (m_currentConnector != nullptr)
+        {
+            deleteSelectedConnector();
+        }
+        update();
+    }
+}
+
+void Diagram::deleteSelectedConnector()
+{
+    for (auto it = m_connectors.begin(); it != m_connectors.end(); ++it)
+    {
+        if (&(*it) == m_currentConnector)
+        {
+            m_connectors.erase(it);
+            m_currentConnector = nullptr;
+            generateCode();
             return;
         }
     }

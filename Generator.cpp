@@ -11,31 +11,38 @@ std::shared_ptr<generate_code::Element> generate_code::elementToPseudoCode(const
     {
         case ToolBoxModel::Element::Block:
         {
-            qDebug() << "elementToPseudoCode: " << diagramElement->m_text;
             return std::make_shared<Block>(diagramElement->m_text);
         }
         case ToolBoxModel::Element::If:
         {
+            // Create yesElementList and noElementList
             ElementList yesElementList;
             ElementList noElementList;
+
+            // Find end of if
             const DiagramElement* endOfIf = findEndOfIf(diagram, diagramElement);
             if (endOfIf != nullptr)
             {
-                qDebug() << "endOfIf: " << endOfIf->m_text;
+                // Go through yes connector
                 const Connector* yesConnector = diagram.getYesOutputConnector(diagramElement);
-                for (const auto* element = yesConnector->at(1).m_element; element != endOfIf; )
+                if (yesConnector->size() > 1)
                 {
-                    yesElementList.emplace_back(elementToPseudoCode(diagram, element));
-                    element = findNextElement(diagram, element);
-                    qDebug() << "yesConnector: " << element->m_text;
+                    for (const auto* element = yesConnector->back().m_element; element != endOfIf; )
+                    {
+                        yesElementList.emplace_back(elementToPseudoCode(diagram, element));
+                        element = findNextElement(diagram, element);
+                    }
                 }
 
+                // Go through no connector
                 const Connector* noConnector = diagram.getNoOutputConnector(diagramElement);
-                for (const auto* element = noConnector->at(1).m_element; element != endOfIf; )
+                if (noConnector->size() > 1)
                 {
-                    noElementList.emplace_back(elementToPseudoCode(diagram, element));
-                    element = findNextElement(diagram, element);
-                    qDebug() << "noConnector: " << element->m_text;
+                    for (const auto* element = noConnector->back().m_element; element != endOfIf; )
+                    {
+                        noElementList.emplace_back(elementToPseudoCode(diagram, element));
+                        element = findNextElement(diagram, element);
+                    }
                 }
             }
             return std::make_shared<If>(diagramElement->m_text, yesElementList, noElementList);
@@ -161,7 +168,6 @@ const DiagramElement* findNextElement(const Diagram& diagram, const DiagramEleme
             {
                 return nullptr;
             }
-            qDebug() << "findNextElement: " << connector->back().m_element->m_text;
             return connector->back().m_element;
         }
         case ToolBoxModel::Element::If:

@@ -19,6 +19,7 @@ class Diagram : public QWidget
     DiagramElement*             m_dragElement = nullptr;
     DiagramElement*             m_currentElement = nullptr;
     DiagramElement*             m_inputElement = nullptr;
+    Connector*                  m_currentConnector = nullptr;
 
     Connector                   m_currentArrow;
     QPoint                      m_newArrowPoint;
@@ -34,6 +35,7 @@ public:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 
     void setCurrentElement(ToolBoxModel::Element::Type type);
     void currentItemReleased();
@@ -45,6 +47,7 @@ private:
     static void drawGrid(QPainter* painter);
     DiagramElement* onElementClicked(QPoint mousePos);
     void drawCurrentElement(QPainter* painter);
+    void drawSelectedConnector(QPainter* painter);
     static bool isWithinDiagramArea(const QPoint point) ;
     void deleteDragElement();
     Connector createInputCircles() const;
@@ -53,6 +56,8 @@ private:
     void generateCode();
     int centerColumn(int x);
     int centerRow(int y);
+    Connector* onConnectorCollision(const QPoint mousePos);
+    void deleteSelectedConnector();
 
 public:
     const Connector* getOutputConnector(const DiagramElement* element) const;
