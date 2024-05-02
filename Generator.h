@@ -22,13 +22,33 @@ namespace generate_code {
         virtual void generatePython( std::ostream&, int indent ) const = 0;
         virtual void generateCpp( std::ostream&, int indent ) const = 0;
 
-        void printText( std::ostream& output, const std::string& text, int indent) const
+        void printIndent(std::ostream& output, int indent) const
         {
             for(int i = 0; i < indent; ++i)
             {
                 output << ' ';
             }
-            output << text << std::endl;
+        }
+
+        void printText( std::ostream& output, const std::string& text, int indent) const
+        {
+            printIndent(output, indent);
+
+            std::string subString;
+            for (const auto& symbol : text)
+            {
+                if (symbol == '\n')
+                {
+                    output << subString << std::endl;
+                    printIndent(output, indent);
+                    subString = "";
+                }
+                else
+                {
+                    subString += symbol;
+                }
+            }
+            output << subString << std::endl;
         }
     };
 
@@ -184,7 +204,6 @@ namespace generate_code {
 
         virtual void generateCpp( std::ostream& output, int indent ) const override
         {
-            printText(output, "BLOCK", indent);
             for(const auto& line : m_body)
             {
                 printText(output, line, indent);

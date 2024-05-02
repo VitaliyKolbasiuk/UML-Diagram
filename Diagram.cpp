@@ -5,6 +5,7 @@
 #include "ElementText.h"
 
 #include <QMouseEvent>
+#include <QTextDocument>
 #include <sstream>
 #include <string>
 
@@ -13,7 +14,7 @@ Diagram::Diagram()
     setMinimumSize(getDiagramWidth() + 10, getDiagramHeight() + 10);
 
     setMouseTracking(true);
-    QWidget::setFocusPolicy(Qt::StrongFocus);
+    QWidget::setFocusPolicy(Qt::ClickFocus);
 
 }
 
@@ -24,6 +25,7 @@ void Diagram::paintEvent(QPaintEvent *event)
     pen.setStyle(Qt::DashLine);
     painter.setPen(pen);
 
+    // Draw grid
     drawGrid(&painter);
 
     pen.setColor(Qt::yellow);
@@ -41,6 +43,25 @@ void Diagram::paintEvent(QPaintEvent *event)
         if (&element != m_currentElement)
         {
             drawGridElement(element);
+        }
+        QFontMetrics fm(painter.font());
+        QStringList lines = QString::fromStdString(element.m_text).split("\n");
+        int maxTextWidth = 0;
+
+        for (const QString& line : lines)
+        {
+            int textWidth = fm.horizontalAdvance(line);
+            textWidth = textWidth < 0 ? 3 : textWidth;
+            maxTextWidth = std::max(textWidth, maxTextWidth);
+        }
+
+        int xOffset = element.m_column * getGridWidth() + (getGridWidth() - maxTextWidth) / 2;
+        int yOffset = element.m_row * getGridHeight() + getGridHeight() / 2;
+
+        for (const QString& line : lines)
+        {
+            painter.drawText(QPoint(xOffset, yOffset), line);
+            yOffset += fm.height();
         }
     }
 
@@ -61,9 +82,9 @@ void Diagram::paintEvent(QPaintEvent *event)
     {
         assert(!arrow.empty());
 
-        if (&arrow == m_currentConnector)
+        if (&arrow == m_selectedConnector)
         {
-            drawSelectedConnector(&painter);
+            continue;
         }
 
         QPainterPath path;
@@ -79,6 +100,13 @@ void Diagram::paintEvent(QPaintEvent *event)
     if (m_inputElement)
     {
         drawInputElement(&painter);
+    }
+
+    pen.setColor(Qt::gray);
+    painter.setPen(pen);
+    if (m_selectedConnector != nullptr)
+    {
+        drawSelectedConnector(&painter);
     }
 
     if (m_currentElement)
@@ -135,20 +163,32 @@ void Diagram::drawCurrentElement(QPainter* painter)
 
 void Diagram::drawSelectedConnector(QPainter *painter)
 {
-    QBrush brush(Qt::darkGray);
-    painter->setBrush(brush);
-    QPen pen(Qt::white);
-    painter->setPen(pen);
-    QPainterPath path;
+    // Draw the connector
 
-    for (int i = 1; i < m_currentConnector->size(); ++i)
+    QPainterPath connectorPath;
+    for (int i = 1; i < m_selectedConnector->size(); ++i)
     {
-        path.moveTo((*m_currentConnector)[i - 1].m_point);
-        path.lineTo((*m_currentConnector)[i].m_point);
+        connectorPath.moveTo((*m_selectedConnector)[i - 1].m_point);
+        connectorPath.lineTo((*m_selectedConnector)[i].m_point);
     }
-    painter->drawPath(path);
-}
+    painter->drawPath(connectorPath);
+    connectorPath.closeSubpath();
 
+    // Draw filled circles
+    for (int i = 0; i < m_selectedConnector->size() - 1; ++i)
+    {
+        if ((*m_selectedConnector)[i].m_point.x() - (*m_selectedConnector)[i + 1].m_point.x() == 0)
+        {
+            int yMid = ((*m_selectedConnector)[i].m_point.y() + (*m_selectedConnector)[i + 1].m_point.y()) / 2;
+            painter->drawEllipse(QPoint((*m_selectedConnector)[i].m_point.x(), yMid), 5, 5);
+        }
+        else
+        {
+            int xMid = ((*m_selectedConnector)[i].m_point.x() + (*m_selectedConnector)[i + 1].m_point.x()) / 2;
+            painter->drawEllipse(QPoint(xMid, (*m_selectedConnector)[i].m_point.y()), 5, 5);
+        }
+    }
+}
 void Diagram::mousePressEvent(QMouseEvent* event)
 {
     ConnectionPoint connectionPoint;
@@ -344,7 +384,7 @@ int Diagram::centerRow(int y)
 
 void Diagram::mouseReleaseEvent(QMouseEvent* event)
 {
-    m_currentConnector = onConnectorCollision(event->pos());
+    m_selectedConnector = onConnectorCollision(event->pos());
     update();
 }
 
@@ -390,6 +430,7 @@ void Diagram::mouseDoubleClickEvent(QMouseEvent *event)
             if (elementText.exec() == QDialog::Accepted)
             {
                 element.m_text = elementText.getText().toStdString();
+                generateCode();
             }
             return;
         }
@@ -400,11 +441,47 @@ void Diagram::keyReleaseEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete)
     {
-        if (m_currentConnector != nullptr)
+        // Delete selected connector
+        if (m_selectedConnector != nullptr)
         {
             deleteSelectedConnector();
         }
+
+        // Delete current element
+        if (m_currentElement != nullptr && m_currentArrow.empty())
+        {
+            deleteCurrentElement();
+        }
+
+        generateCode();
         update();
+    }
+}
+
+void Diagram::deleteCurrentElement()
+{
+    for (auto it = m_diagramElements.begin(); it != m_diagramElements.end(); ++it)
+    {
+        if (&(*it) == m_currentElement)
+        {
+            // Find and delete all related connectors
+            deleteRelatedConnectors(&(*it));
+
+            m_diagramElements.erase(it);
+            m_currentElement = nullptr;
+            break;
+        }
+    }
+}
+
+void Diagram::deleteRelatedConnectors(const DiagramElement* element)
+{
+    for (auto it = m_connectors.begin(); it != m_connectors.end(); ++it)
+    {
+        if (it->front().m_element == element || it->back().m_element == element)
+        {
+            m_connectors.erase(it--);
+        }
     }
 }
 
@@ -412,11 +489,10 @@ void Diagram::deleteSelectedConnector()
 {
     for (auto it = m_connectors.begin(); it != m_connectors.end(); ++it)
     {
-        if (&(*it) == m_currentConnector)
+        if (&(*it) == m_selectedConnector)
         {
             m_connectors.erase(it);
-            m_currentConnector = nullptr;
-            generateCode();
+            m_selectedConnector = nullptr;
             return;
         }
     }
@@ -467,6 +543,9 @@ void Diagram::currentItemReleased()
     m_dragElement->m_row = j;
     m_diagramElements.emplace_back(*m_dragElement);
     deleteDragElement();
+
+    QWidget::grabKeyboard();
+    generateCode();
 }
 
 bool Diagram::isWithinDiagramArea(const QPoint point)
@@ -555,9 +634,9 @@ void Diagram::updateDiagram()
 
 void Diagram::generateCode()
 {
-    generate_code::Code pythonCode = generate_code::diagramToPythonPseudoCode(*this);
+    generate_code::Code code = generate_code::diagramToPythonPseudoCode(*this);
     std::ostringstream oss;
-    for(const auto& element : pythonCode)
+    for(const auto& element : code)
     {
         element->generateCpp(oss, 0);
     }

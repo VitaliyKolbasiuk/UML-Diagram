@@ -19,7 +19,7 @@ class Diagram : public QWidget
     DiagramElement*             m_dragElement = nullptr;
     DiagramElement*             m_currentElement = nullptr;
     DiagramElement*             m_inputElement = nullptr;
-    Connector*                  m_currentConnector = nullptr;
+    Connector*                  m_selectedConnector = nullptr;
 
     Connector                   m_currentArrow;
     QPoint                      m_newArrowPoint;
@@ -58,6 +58,8 @@ private:
     int centerRow(int y);
     Connector* onConnectorCollision(const QPoint mousePos);
     void deleteSelectedConnector();
+    void deleteCurrentElement();
+    void deleteRelatedConnectors(const DiagramElement* element);
 
 public:
     const Connector* getOutputConnector(const DiagramElement* element) const;
